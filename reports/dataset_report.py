@@ -21,6 +21,12 @@ IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".bmp")
 SPLIT_FOLDERS = ("train", "valid", "test")
 SMALL_AREA_PX = 32 * 32
 MEDIUM_AREA_PX = 96 * 96
+DUPLICATE_LEAKAGE_CAVEAT = (
+    "Esta comprobación solo detecta duplicados EXACTOS byte-a-byte (mismo hash MD5); "
+    "NO detecta variantes casi-duplicadas por aumentación (rotación, recorte, cambios "
+    "de color) de una misma imagen fuente en distintos splits. Un resultado sin "
+    "duplicados aquí es necesario pero no suficiente para descartar fuga de datos."
+)
 
 
 def _stats(values: list[float]) -> dict[str, float]:
@@ -84,6 +90,7 @@ class DatasetReport:
 
         report["class_imbalance_ratio"] = self._imbalance_ratio(all_class_counts)
         report["duplicate_leakage"] = self._find_cross_split_duplicates(image_hashes)
+        report["duplicate_leakage_caveat"] = DUPLICATE_LEAKAGE_CAVEAT
 
         output_path = Path(output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
@@ -181,9 +188,13 @@ class DatasetReport:
                 )
                 class_counts[class_name] += 1
                 n_objects += 1
-                bbox_aspect_ratios.append(w / h)
 
                 if width_px and height_px:
+                    # Usar dimensiones en píxeles para el aspect ratio real:
+                    # w/h normalizados son relativos al ancho/alto de la
+                    # imagen por separado, así que para imágenes no
+                    # cuadradas w/h != aspect ratio real del box.
+                    bbox_aspect_ratios.append((w * width_px) / (h * height_px))
                     area_px = (w * width_px) * (h * height_px)
                     if area_px < SMALL_AREA_PX:
                         size_buckets["small"] += 1
@@ -191,6 +202,8 @@ class DatasetReport:
                         size_buckets["medium"] += 1
                     else:
                         size_buckets["large"] += 1
+                else:
+                    bbox_aspect_ratios.append(w / h)
 
             objects_per_image.append(n_objects)
 
@@ -253,6 +266,8 @@ class DatasetReport:
         lines.append(f"- class_id fuera de rango: {len(issues['class_id_out_of_range'])}")
         lines.append(f"- Imágenes sin label: {len(issues['images_without_labels'])}")
         lines.append(f"- Labels sin imagen: {len(issues['labels_without_images'])}")
+        lines.append("")
+        lines.append(f"> **Nota:** {report['duplicate_leakage_caveat']}")
 
         if report["duplicate_leakage"]:
             lines.append("")
