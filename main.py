@@ -13,6 +13,7 @@ Fecha: 2024
 """
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -87,12 +88,12 @@ class MacroinvertebratePipeline:
                    epochs: int | None = None) -> str:
         """
         Entrena el modelo YOLO.
-        
+
         Args:
             data_yaml_path: Ruta al archivo data.yaml
             experiment_name: Nombre del experimento
             epochs: Número de épocas
-            
+
         Returns:
             Ruta al modelo entrenado
         """
@@ -115,16 +116,22 @@ class MacroinvertebratePipeline:
                 workers=config.workers
             )
 
-            # Evaluar modelo
-            self.logger.info("📊 Evaluando modelo entrenado...")
-            metrics = self.trainer.evaluate(model_path, data_yaml_path)
+            # Evaluar en el split de test (no val: ese ya se usó para elegir best.pt)
+            self.logger.info("📊 Evaluando modelo en el split de test...")
+            self.trainer.evaluate(model_path, data_yaml_path)
 
-            # Obtener resumen
+            # Obtener resumen y persistirlo como registro del experimento
             summary = self.trainer.get_training_summary()
-            self.logger.info("📈 Resumen del entrenamiento:")
+            self.logger.info("📈 Resumen de evaluación (split de test):")
             self.logger.info(f"   - mAP50: {summary['metrics']['map50']:.4f}")
             self.logger.info(f"   - Precisión: {summary['metrics']['precision']:.4f}")
             self.logger.info(f"   - Recall: {summary['metrics']['recall']:.4f}")
+
+            results_dir = Path("results") / experiment_name
+            results_dir.mkdir(parents=True, exist_ok=True)
+            with open(results_dir / "eval_metrics.json", "w", encoding="utf-8") as f:
+                json.dump(summary, f, indent=2, ensure_ascii=False)
+            self.logger.info(f"   - Métricas guardadas en: {results_dir / 'eval_metrics.json'}")
 
             return model_path
 
