@@ -51,7 +51,9 @@ class ModelReport:
         self._last_model = model
 
         if metrics is None:
-            metrics = model.val(data=str(self.data_yaml_path), split="test", plots=True, verbose=False)
+            metrics = model.val(
+                data=str(self.data_yaml_path), split="test", plots=True, verbose=False
+            )
 
         self._copy_curve_plots(metrics, output_path)
 
@@ -75,7 +77,9 @@ class ModelReport:
         report["latency_ms"] = self._latency_benchmark(model)
 
         self._write_per_class_csv(report["per_class"], output_path / "per_class_metrics.csv")
-        self._write_confidence_sweep_csv(report["confidence_sweep"], output_path / "confidence_sweep.csv")
+        self._write_confidence_sweep_csv(
+            report["confidence_sweep"], output_path / "confidence_sweep.csv"
+        )
         self._write_json(report, output_path / "report.json")
         self._write_markdown(report, output_path / "report.md")
         self._write_confidence_sweep_chart(report["confidence_sweep"], output_path)
@@ -129,7 +133,9 @@ class ModelReport:
             )
             precision = float(metrics.box.mp)
             recall = float(metrics.box.mr)
-            f1 = (2 * precision * recall / (precision + recall)) if (precision + recall) > 0 else 0.0
+            f1 = (
+                (2 * precision * recall / (precision + recall)) if (precision + recall) > 0 else 0.0
+            )
             sweep.append({"confidence": conf, "precision": precision, "recall": recall, "f1": f1})
         return sweep
 
@@ -146,7 +152,9 @@ class ModelReport:
             durations_ms.append((time.perf_counter() - start) * 1000)
 
         arr = np.array(durations_ms) if durations_ms else np.array([0.0])
-        device = str(next(model.model.parameters()).device) if hasattr(model, "model") else "unknown"
+        device = (
+            str(next(model.model.parameters()).device) if hasattr(model, "model") else "unknown"
+        )
         return {
             "mean": float(arr.mean()),
             "median": float(np.median(arr)),
@@ -166,7 +174,9 @@ class ModelReport:
 
     def _write_per_class_csv(self, per_class: list[dict[str, Any]], path: Path) -> None:
         with open(path, "w", newline="", encoding="utf-8") as f:
-            writer = csv.DictWriter(f, fieldnames=["class", "precision", "recall", "f1", "ap50", "ap50_95"])
+            writer = csv.DictWriter(
+                f, fieldnames=["class", "precision", "recall", "f1", "ap50", "ap50_95"]
+            )
             writer.writeheader()
             writer.writerows(per_class)
 
@@ -197,7 +207,9 @@ class ModelReport:
             lines.append(f"## Intervalo de confianza 95% (bootstrap, n={ci['n_images']} imágenes)")
             for metric_name in ("precision", "recall", "f1"):
                 m = ci[metric_name]
-                lines.append(f"- {metric_name}: {m['mean']:.3f} [{m['ci_low']:.3f}, {m['ci_high']:.3f}]")
+                lines.append(
+                    f"- {metric_name}: {m['mean']:.3f} [{m['ci_low']:.3f}, {m['ci_high']:.3f}]"
+                )
             lines.append("")
 
         lines.append("## Métricas por clase")
@@ -225,7 +237,9 @@ class ModelReport:
 
         path.write_text("\n".join(lines), encoding="utf-8")
 
-    def _write_confidence_sweep_chart(self, sweep: list[dict[str, float]], output_dir: Path) -> None:
+    def _write_confidence_sweep_chart(
+        self, sweep: list[dict[str, float]], output_dir: Path
+    ) -> None:
         if not sweep:
             return
         fig, ax = plt.subplots(figsize=(8, 5))

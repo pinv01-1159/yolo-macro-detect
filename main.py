@@ -27,7 +27,7 @@ from utils.logger import setup_logger
 class MacroinvertebratePipeline:
     """
     Pipeline completo para detección de macroinvertebrados acuáticos.
-    
+
     Esta clase maneja todo el flujo de trabajo desde la descarga del dataset
     hasta la inferencia con modelos entrenados, incluyendo evaluación de
     calidad del agua mediante el índice BMWP.
@@ -51,10 +51,10 @@ class MacroinvertebratePipeline:
     def setup_dataset(self, version: int | None = None) -> str:
         """
         Configura y descarga el dataset.
-        
+
         Args:
             version: Versión específica del dataset (opcional)
-            
+
         Returns:
             Ruta al archivo data.yaml
         """
@@ -152,12 +152,12 @@ class MacroinvertebratePipeline:
                             experiment_name: str | None = None) -> str:
         """
         Ejecuta el pipeline completo.
-        
+
         Args:
             version: Versión del dataset
             epochs: Número de épocas
             experiment_name: Nombre del experimento
-            
+
         Returns:
             Ruta al modelo entrenado
         """
@@ -189,14 +189,14 @@ class MacroinvertebratePipeline:
                      calculate_bmwp: bool = False) -> dict:
         """
         Realiza predicción en una imagen.
-        
+
         Args:
             image_path: Ruta a la imagen
             model_path: Ruta al modelo entrenado
             conf_threshold: Umbral de confianza
             save_annotated: Si guardar imagen anotada
             calculate_bmwp: Si calcular el índice BMWP
-            
+
         Returns:
             Resultados de la predicción
         """
@@ -228,7 +228,7 @@ class MacroinvertebratePipeline:
 def main():
     """
     Función principal del script.
-    
+
     Maneja los argumentos de línea de comandos y ejecuta
     las operaciones correspondientes.
     """
@@ -408,7 +408,10 @@ Ejemplos de uso:
             print(f"   - Familias detectadas: {results['familias_detectadas']}")
 
             for det in results['detecciones']:
-                print(f"   - {det['familia']}: {det['cantidad']} (conf: {det['confidence_promedio']:.3f})")
+                print(
+                    f"   - {det['familia']}: {det['cantidad']} "
+                    f"(conf: {det['confidence_promedio']:.3f})"
+                )
 
             # Mostrar resultados BMWP si se calculó
             if args.calculate_bmwp and 'bmwp_total' in results:

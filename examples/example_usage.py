@@ -137,7 +137,10 @@ def example_inference_only():
         print(f"   - Familias detectadas: {results['familias_detectadas']}")
 
         for det in results['detecciones']:
-            print(f"   - {det['familia']}: {det['cantidad']} (conf: {det['confidence_promedio']:.3f})")
+            print(
+                f"   - {det['familia']}: {det['cantidad']} "
+                f"(conf: {det['confidence_promedio']:.3f})"
+            )
 
     except Exception as e:
         print(f"❌ Error: {e}")
@@ -186,7 +189,10 @@ def example_inference_with_bmwp():
         print(f"   - Familias detectadas: {results['familias_detectadas']}")
 
         for det in results['detecciones']:
-            print(f"   - {det['familia']}: {det['cantidad']} (conf: {det['confidence_promedio']:.3f})")
+            print(
+                f"   - {det['familia']}: {det['cantidad']} "
+                f"(conf: {det['confidence_promedio']:.3f})"
+            )
 
         # Mostrar resultados BMWP
         if 'bmwp_total' in results:
@@ -251,7 +257,10 @@ def example_bmwp_calculator_direct():
         # Mostrar detalles por familia
         print("\n📋 Contribución por familia:")
         for score in bmwp_result.family_scores:
-            print(f"   - {score['familia']}: {score['cantidad']} × {score['bmwp_individual']} = {score['bmwp_contribution']} puntos")
+            print(
+                f"   - {score['familia']}: {score['cantidad']} × "
+                f"{score['bmwp_individual']} = {score['bmwp_contribution']} puntos"
+            )
 
     except Exception as e:
         print(f"❌ Error: {e}")
@@ -271,7 +280,10 @@ def example_bmwp_family_scores():
 
         print("\n📊 Clases de calidad del agua:")
         for class_name, criteria in bmwp_calculator.WATER_QUALITY_CLASSES.items():
-            print(f"   - Clase {class_name}: {criteria['min']}-{criteria['max']} puntos → {criteria['description']}")
+            print(
+                f"   - Clase {class_name}: {criteria['min']}-{criteria['max']} puntos "
+                f"→ {criteria['description']}"
+            )
 
         print("\n💡 Información adicional:")
         print(f"   - Familias disponibles: {len(bmwp_calculator.get_available_families())}")

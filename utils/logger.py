@@ -18,12 +18,12 @@ def setup_logger(name: str = "yolo_macro_detect",
                 level: str | None = None) -> logging.Logger:
     """
     Configura y retorna un logger personalizado para el proyecto.
-    
+
     Args:
         name: Nombre del logger
         log_file: Ruta al archivo de log (opcional)
         level: Nivel de logging (opcional, usa config por defecto)
-        
+
     Returns:
         Logger configurado
     """
@@ -68,10 +68,10 @@ def setup_logger(name: str = "yolo_macro_detect",
 def get_training_logger(experiment_name: str) -> logging.Logger:
     """
     Obtiene un logger específico para entrenamiento.
-    
+
     Args:
         experiment_name: Nombre del experimento
-        
+
     Returns:
         Logger configurado para entrenamiento
     """
@@ -87,7 +87,7 @@ def get_training_logger(experiment_name: str) -> logging.Logger:
 def get_inference_logger() -> logging.Logger:
     """
     Obtiene un logger específico para inferencia.
-    
+
     Returns:
         Logger configurado para inferencia
     """

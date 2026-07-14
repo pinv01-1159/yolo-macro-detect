@@ -29,7 +29,7 @@ class BMWPResult:
 class BMWPCalculator:
     """
     Calculadora del índice BMWP para evaluación de calidad del agua.
-    
+
     Esta clase implementa el cálculo del índice BMWP basado en las familias
     de macroinvertebrados detectadas, siguiendo los criterios establecidos
     para Paraguay y adaptados de Roldán (2003) y Alba-Tercedor (1996).
@@ -64,7 +64,7 @@ class BMWPCalculator:
     def calculate_bmwp(self, detections: list[dict[str, Any]]) -> BMWPResult:
         """
         Calcula el índice BMWP basado en las detecciones de macroinvertebrados.
-        
+
         Args:
             detections: Lista de detecciones con formato:
                 [
@@ -75,7 +75,7 @@ class BMWPCalculator:
                     },
                     ...
                 ]
-        
+
         Returns:
             BMWPResult con el puntaje total, clase de calidad y detalles
         """
@@ -125,10 +125,10 @@ class BMWPCalculator:
     def _get_water_quality_class(self, total_score: int) -> tuple[str, str]:
         """
         Determina la clase de calidad del agua basada en el puntaje BMWP.
-        
+
         Args:
             total_score: Puntaje total BMWP
-            
+
         Returns:
             Tupla con (clase, descripción)
         """
@@ -142,10 +142,10 @@ class BMWPCalculator:
     def get_family_score(self, family: str) -> int | None:
         """
         Obtiene el puntaje BMWP para una familia específica.
-        
+
         Args:
             family: Nombre de la familia
-            
+
         Returns:
             Puntaje BMWP o None si no está disponible
         """
@@ -154,7 +154,7 @@ class BMWPCalculator:
     def get_available_families(self) -> list[str]:
         """
         Obtiene la lista de familias disponibles para el cálculo BMWP.
-        
+
         Returns:
             Lista de familias disponibles
         """
@@ -163,7 +163,7 @@ class BMWPCalculator:
     def get_water_quality_info(self) -> dict[str, dict[str, Any]]:
         """
         Obtiene información sobre las clases de calidad del agua.
-        
+
         Returns:
             Diccionario con información de las clases
         """
@@ -172,16 +172,19 @@ class BMWPCalculator:
     def format_result_for_json(self, bmwp_result: BMWPResult) -> dict[str, Any]:
         """
         Formatea el resultado BMWP para exportación JSON.
-        
+
         Args:
             bmwp_result: Resultado del cálculo BMWP
-            
+
         Returns:
             Diccionario formateado para JSON
         """
         return {
             "bmwp_total": bmwp_result.total_score,
-            "calidad_agua": f"{bmwp_result.water_quality_description} (Clase {bmwp_result.water_quality_class})",
+            "calidad_agua": (
+                f"{bmwp_result.water_quality_description} "
+                f"(Clase {bmwp_result.water_quality_class})"
+            ),
             "clase_calidad": bmwp_result.water_quality_class,
             "descripcion_calidad": bmwp_result.water_quality_description,
             "confianza": bmwp_result.confidence,
@@ -200,10 +203,10 @@ class BMWPCalculator:
     def validate_detections(self, detections: list[dict[str, Any]]) -> list[str]:
         """
         Valida las detecciones y retorna familias no reconocidas.
-        
+
         Args:
             detections: Lista de detecciones
-            
+
         Returns:
             Lista de familias no reconocidas
         """

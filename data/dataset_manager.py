@@ -18,7 +18,7 @@ from utils.validators import validate_directory_path
 class DatasetManager:
     """
     Clase para manejar datasets de macroinvertebrados.
-    
+
     Esta clase encapsula toda la lógica de descarga y gestión
     de datasets desde Roboflow.
     """
@@ -82,12 +82,14 @@ class DatasetManager:
     def get_available_versions(self) -> dict[str, Any]:
         """
         Obtiene las versiones disponibles del dataset.
-        
+
         Returns:
             Información de las versiones disponibles
         """
         if self.project is None:
-            raise ValueError("Conexión con Roboflow no establecida. Use setup_roboflow_connection() primero.")
+            raise ValueError(
+                "Conexión con Roboflow no establecida. Use setup_roboflow_connection() primero."
+            )
 
         self.logger.info("🔍 Obteniendo versiones disponibles del dataset...")
 
@@ -124,17 +126,19 @@ class DatasetManager:
                         output_dir: str = "datasets") -> dict[str, Any]:
         """
         Descarga el dataset desde Roboflow.
-        
+
         Args:
             version: Versión específica a descargar (usa la última si no se especifica)
             format_type: Formato del dataset
             output_dir: Directorio de salida
-            
+
         Returns:
             Información del dataset descargado
         """
         if self.project is None:
-            raise ValueError("Conexión con Roboflow no establecida. Use setup_roboflow_connection() primero.")
+            raise ValueError(
+                "Conexión con Roboflow no establecida. Use setup_roboflow_connection() primero."
+            )
 
         self.logger.info("📦 Descargando dataset desde Roboflow")
         self.logger.info(f"   - Formato: {format_type}")
@@ -154,7 +158,9 @@ class DatasetManager:
             # Verificar que la versión existe
             available_versions = [v.version for v in versions_info]
             if version not in available_versions:
-                raise ValueError(f"Versión {version} no disponible. Versiones: {available_versions}")
+                raise ValueError(
+                    f"Versión {version} no disponible. Versiones: {available_versions}"
+                )
 
             # Descargar dataset
             self.logger.info(f"📥 Descargando versión {version}...")
@@ -193,10 +199,10 @@ class DatasetManager:
     def _get_dataset_info(self, dataset_path: str) -> dict[str, Any]:
         """
         Obtiene información del dataset descargado.
-        
+
         Args:
             dataset_path: Ruta al dataset
-            
+
         Returns:
             Información del dataset
         """
@@ -236,10 +242,10 @@ class DatasetManager:
     def _generate_basic_info(self, dataset_path: str) -> dict[str, Any]:
         """
         Genera información básica del dataset.
-        
+
         Args:
             dataset_path: Ruta al dataset
-            
+
         Returns:
             Información básica del dataset
         """
@@ -247,9 +253,15 @@ class DatasetManager:
             dataset_path = Path(dataset_path)
 
             # Contar imágenes en cada split
-            train_count = len(list((dataset_path / "train").glob("*.jpg"))) + len(list((dataset_path / "train").glob("*.png")))
-            val_count = len(list((dataset_path / "valid").glob("*.jpg"))) + len(list((dataset_path / "valid").glob("*.png")))
-            test_count = len(list((dataset_path / "test").glob("*.jpg"))) + len(list((dataset_path / "test").glob("*.png")))
+            train_count = len(list((dataset_path / "train").glob("*.jpg"))) + len(
+                list((dataset_path / "train").glob("*.png"))
+            )
+            val_count = len(list((dataset_path / "valid").glob("*.jpg"))) + len(
+                list((dataset_path / "valid").glob("*.png"))
+            )
+            test_count = len(list((dataset_path / "test").glob("*.jpg"))) + len(
+                list((dataset_path / "test").glob("*.png"))
+            )
 
             # Obtener clases desde las etiquetas
             classes = self._get_classes_from_labels(str(dataset_path))
@@ -277,10 +289,10 @@ class DatasetManager:
     def _get_classes_from_labels(self, dataset_path: str) -> list:
         """
         Obtiene las clases desde los archivos de etiquetas.
-        
+
         Args:
             dataset_path: Ruta al dataset
-            
+
         Returns:
             Lista de nombres de clases
         """
@@ -305,7 +317,9 @@ class DatasetManager:
 
             # Si no se encontraron clases, usar valores por defecto
             if not class_list:
-                self.logger.warning("No se encontraron clases en las etiquetas, usando valores por defecto")
+                self.logger.warning(
+                    "No se encontraron clases en las etiquetas, usando valores por defecto"
+                )
                 return ["Belostomatidae", "Chironomidae", "Coenagrionidae", "Dytiscidae",
                        "Hirudinidae", "Libellulidae", "Noteridae", "Physidae", "Planorbidae"]
 
@@ -330,10 +344,10 @@ class DatasetManager:
     def validate_dataset_structure(self, dataset_path: str) -> bool:
         """
         Valida la estructura del dataset descargado.
-        
+
         Args:
             dataset_path: Ruta al dataset
-            
+
         Returns:
             True si la estructura es válida
         """
@@ -374,7 +388,9 @@ class DatasetManager:
                 # Buscar directamente en la estructura del dataset
                 split_images_path = dataset_path / folder_name / "images"
                 if not split_images_path.exists():
-                    raise FileNotFoundError(f"Ruta de {split_key} no encontrada: {split_images_path}")
+                    raise FileNotFoundError(
+                        f"Ruta de {split_key} no encontrada: {split_images_path}"
+                    )
 
                 # Verificar que hay imágenes
                 image_extensions = {'.jpg', '.jpeg', '.png', '.bmp'}
@@ -382,7 +398,9 @@ class DatasetManager:
                         if f.suffix.lower() in image_extensions]
 
                 if len(images) == 0:
-                    raise ValueError(f"No se encontraron imágenes en {split_key}: {split_images_path}")
+                    raise ValueError(
+                        f"No se encontraron imágenes en {split_key}: {split_images_path}"
+                    )
 
                 self.logger.info(f"   - {split_key}: {len(images)} imágenes")
 
@@ -399,10 +417,10 @@ class DatasetManager:
     def get_dataset_summary(self, dataset_path: str) -> dict[str, Any]:
         """
         Obtiene un resumen del dataset.
-        
+
         Args:
             dataset_path: Ruta al dataset
-            
+
         Returns:
             Resumen del dataset
         """
@@ -445,10 +463,10 @@ class DatasetManager:
     def generate_data_yaml(self, dataset_path: str) -> str:
         """
         Genera el archivo data.yaml para el dataset.
-        
+
         Args:
             dataset_path: Ruta al dataset
-            
+
         Returns:
             Ruta al archivo data.yaml generado
         """

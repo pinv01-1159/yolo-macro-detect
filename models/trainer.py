@@ -20,7 +20,7 @@ from utils.validators import validate_data_yaml_path, validate_directory_path
 class YOLOTrainer:
     """
     Clase para manejar el entrenamiento de modelos YOLO.
-    
+
     Esta clase encapsula toda la lógica de entrenamiento, incluyendo
     configuración, entrenamiento, evaluación y guardado de resultados.
     """
@@ -28,7 +28,7 @@ class YOLOTrainer:
     def __init__(self, experiment_name: str | None = None):
         """
         Inicializa el entrenador YOLO.
-        
+
         Args:
             experiment_name: Nombre del experimento (usa config por defecto)
         """
@@ -56,10 +56,10 @@ class YOLOTrainer:
     def load_model(self, model_name: str | None = None) -> YOLO:
         """
         Carga el modelo YOLO base.
-        
+
         Args:
             model_name: Nombre del modelo base (usa config por defecto)
-            
+
         Returns:
             Modelo YOLO cargado
         """
@@ -77,10 +77,10 @@ class YOLOTrainer:
     def validate_dataset(self, data_yaml_path: str) -> dict[str, Any]:
         """
         Valida el dataset antes del entrenamiento.
-        
+
         Args:
             data_yaml_path: Ruta al archivo data.yaml
-            
+
         Returns:
             Información del dataset validado
         """
@@ -108,7 +108,9 @@ class YOLOTrainer:
                 # Buscar directamente en la estructura del dataset
                 split_images_path = dataset_dir / folder_name / "images"
                 if not split_images_path.exists():
-                    raise FileNotFoundError(f"Ruta de {split_key} no encontrada: {split_images_path}")
+                    raise FileNotFoundError(
+                        f"Ruta de {split_key} no encontrada: {split_images_path}"
+                    )
 
             self.logger.info("✅ Dataset validado:")
             self.logger.info(f"   - Clases: {dataset_info.get('nc', 'N/A')}")
@@ -312,7 +314,7 @@ class YOLOTrainer:
     def save_training_config(self, output_path: str = "results"):
         """
         Guarda la configuración del entrenamiento.
-        
+
         Args:
             output_path: Directorio donde guardar la configuración
         """

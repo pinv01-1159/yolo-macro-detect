@@ -26,7 +26,11 @@ MEDIUM_AREA_PX = 96 * 96
 def _stats(values: list[float]) -> dict[str, float]:
     if not values:
         return {"mean": 0.0, "min": 0.0, "max": 0.0}
-    return {"mean": float(sum(values) / len(values)), "min": float(min(values)), "max": float(max(values))}
+    return {
+        "mean": float(sum(values) / len(values)),
+        "min": float(min(values)),
+        "max": float(max(values)),
+    }
 
 
 class DatasetReport:
@@ -96,7 +100,9 @@ class DatasetReport:
         bbox_aspect_ratios: list[float] = []
         size_buckets = {"small": 0, "medium": 0, "large": 0}
 
-        image_files = {p.stem: p for p in images_dir.iterdir() if p.suffix.lower() in IMAGE_EXTENSIONS}
+        image_files = {
+            p.stem: p for p in images_dir.iterdir() if p.suffix.lower() in IMAGE_EXTENSIONS
+        }
         label_files = {p.stem: p for p in labels_dir.glob("*.txt")} if labels_dir.exists() else {}
 
         for stem, image_path in image_files.items():
@@ -126,7 +132,12 @@ class DatasetReport:
                 parts = line.split()
                 if len(parts) != 5:
                     issues["malformed_boxes"].append(
-                        {"split": split, "file": str(label_path), "line": line_no, "reason": "expected 5 fields"}
+                        {
+                            "split": split,
+                            "file": str(label_path),
+                            "line": line_no,
+                            "reason": "expected 5 fields",
+                        }
                     )
                     continue
                 try:
@@ -134,13 +145,23 @@ class DatasetReport:
                     cx, cy, w, h = (float(v) for v in parts[1:])
                 except ValueError:
                     issues["malformed_boxes"].append(
-                        {"split": split, "file": str(label_path), "line": line_no, "reason": "non-numeric values"}
+                        {
+                            "split": split,
+                            "file": str(label_path),
+                            "line": line_no,
+                            "reason": "non-numeric values",
+                        }
                     )
                     continue
 
                 if not (0 <= class_id < num_classes):
                     issues["class_id_out_of_range"].append(
-                        {"split": split, "file": str(label_path), "line": line_no, "class_id": class_id}
+                        {
+                            "split": split,
+                            "file": str(label_path),
+                            "line": line_no,
+                            "class_id": class_id,
+                        }
                     )
                     continue
 
@@ -155,7 +176,9 @@ class DatasetReport:
                     )
                     continue
 
-                class_name = class_names[class_id] if class_id < len(class_names) else f"class_{class_id}"
+                class_name = (
+                    class_names[class_id] if class_id < len(class_names) else f"class_{class_id}"
+                )
                 class_counts[class_name] += 1
                 n_objects += 1
                 bbox_aspect_ratios.append(w / h)
@@ -188,7 +211,9 @@ class DatasetReport:
             return 0.0
         return round(max(counts) / min(counts), 2)
 
-    def _find_cross_split_duplicates(self, image_hashes: dict[str, list[str]]) -> list[dict[str, Any]]:
+    def _find_cross_split_duplicates(
+        self, image_hashes: dict[str, list[str]]
+    ) -> list[dict[str, Any]]:
         leaks = []
         for digest, paths in image_hashes.items():
             splits_involved = {p.split("/")[0] for p in paths}

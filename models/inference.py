@@ -31,7 +31,7 @@ from utils.validators import (
 class YOLOInference:
     """
     Clase para manejar la inferencia con modelos YOLO.
-    
+
     Esta clase encapsula toda la lógica de inferencia, incluyendo
     carga de modelos, predicción, anotación, cálculo BMWP y exportación de resultados.
     """
@@ -39,7 +39,7 @@ class YOLOInference:
     def __init__(self, model_path: str | None = None):
         """
         Inicializa el sistema de inferencia.
-        
+
         Args:
             model_path: Ruta al modelo entrenado (opcional)
         """
@@ -53,10 +53,10 @@ class YOLOInference:
     def load_model(self, model_path: str) -> YOLO:
         """
         Carga el modelo YOLO para inferencia.
-        
+
         Args:
             model_path: Ruta al modelo entrenado
-            
+
         Returns:
             Modelo YOLO cargado
         """
@@ -174,10 +174,10 @@ class YOLOInference:
     def calculate_bmwp(self, detections: list[dict[str, Any]]) -> BMWPResult:
         """
         Calcula el índice BMWP basado en las detecciones.
-        
+
         Args:
             detections: Lista de detecciones de macroinvertebrados
-            
+
         Returns:
             Resultado del cálculo BMWP
         """
@@ -209,12 +209,12 @@ class YOLOInference:
                            frame: np.ndarray) -> dict[str, Any]:
         """
         Procesa las detecciones y genera estadísticas.
-        
+
         Args:
             detections: Detecciones de supervision
             results: Resultados de YOLO
             frame: Imagen original
-            
+
         Returns:
             Datos procesados de las detecciones
         """
@@ -258,12 +258,12 @@ class YOLOInference:
                        results) -> np.ndarray:
         """
         Anota la imagen con las detecciones.
-        
+
         Args:
             frame: Imagen original
             detections: Detecciones
             results: Resultados de YOLO
-            
+
         Returns:
             Imagen anotada
         """
@@ -300,10 +300,10 @@ class YOLOInference:
     def _encode_image(self, frame: np.ndarray) -> str:
         """
         Codifica una imagen en base64.
-        
+
         Args:
             frame: Imagen como array de numpy
-            
+
         Returns:
             Imagen codificada en base64
         """
@@ -316,7 +316,7 @@ class YOLOInference:
                              output_dir: str):
         """
         Guarda la imagen anotada.
-        
+
         Args:
             annotated_frame: Imagen anotada
             original_path: Ruta de la imagen original
@@ -348,7 +348,7 @@ class YOLOInference:
                      calculate_bmwp: bool = False) -> list[dict[str, Any]]:
         """
         Realiza predicción en un lote de imágenes.
-        
+
         Args:
             image_paths: Lista de rutas de imágenes
             conf_threshold: Umbral de confianza
@@ -356,7 +356,7 @@ class YOLOInference:
             save_annotated: Si guardar imágenes anotadas
             output_dir: Directorio de salida
             calculate_bmwp: Si calcular BMWP para cada imagen
-            
+
         Returns:
             Lista de resultados de predicción
         """
@@ -394,7 +394,7 @@ class YOLOInference:
                       output_file: str = "results/prediction_results.json"):
         """
         Exporta los resultados a un archivo JSON.
-        
+
         Args:
             results: Resultados de predicción
             output_file: Archivo de salida
