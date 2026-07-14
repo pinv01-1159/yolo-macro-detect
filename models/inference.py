@@ -20,7 +20,12 @@ from ultralytics import YOLO
 from config import config
 from utils.bmwp_calculator import BMWPResult, bmwp_calculator
 from utils.logger import get_inference_logger
-from utils.validators import validate_confidence_threshold, validate_image_path, validate_model_path
+from utils.validators import (
+    validate_confidence_threshold,
+    validate_image_path,
+    validate_iou_threshold,
+    validate_model_path,
+)
 
 
 class YOLOInference:
@@ -77,80 +82,76 @@ class YOLOInference:
     def predict_image(self,
                      image_path: str | Path,
                      conf_threshold: float | None = None,
+                     iou_threshold: float | None = None,
                      img_size: int | None = None,
                      save_annotated: bool = True,
                      output_dir: str = "results",
                      calculate_bmwp: bool = False) -> dict[str, Any]:
         """
         Realiza predicción en una imagen.
-        
+
         Args:
             image_path: Ruta a la imagen
             conf_threshold: Umbral de confianza (usa config por defecto)
+            iou_threshold: Umbral de IoU para NMS (usa config por defecto)
             img_size: Tamaño de imagen para inferencia (usa config por defecto)
             save_annotated: Si guardar la imagen anotada
             output_dir: Directorio para guardar resultados
             calculate_bmwp: Si calcular el índice BMWP
-            
+
         Returns:
             Diccionario con resultados de la predicción
         """
         conf_threshold = conf_threshold or config.confidence_threshold
+        iou_threshold = iou_threshold or config.iou_threshold
         img_size = img_size or config.img_size
 
         self.logger.info(f"🔍 Realizando predicción en: {image_path}")
         self.logger.info(f"   - Umbral confianza: {conf_threshold}")
+        self.logger.info(f"   - Umbral IoU: {iou_threshold}")
         self.logger.info(f"   - Tamaño imagen: {img_size}")
         self.logger.info(f"   - Cálculo BMWP: {calculate_bmwp}")
 
         try:
-            # Validar imagen
             validate_image_path(image_path)
             validate_confidence_threshold(conf_threshold)
+            validate_iou_threshold(iou_threshold)
 
-            # Verificar que el modelo está cargado
             if self.model is None:
                 raise ValueError("Modelo no cargado. Use load_model() primero.")
 
-            # Cargar imagen
             frame = cv2.imread(str(image_path))
             if frame is None:
                 raise ValueError(f"No se pudo cargar la imagen: {image_path}")
 
-            # Realizar predicción
-            results = self.model(frame, imgsz=img_size, verbose=False)[0]
+            # conf/iou se pasan directamente al modelo: Ultralytics aplica el
+            # umbral de confianza y el NMS con el IoU configurado antes de
+            # devolver las detecciones, así que no hace falta re-filtrar acá.
+            results = self.model(
+                frame, imgsz=img_size, conf=conf_threshold, iou=iou_threshold, verbose=False
+            )[0]
             detections = sv.Detections.from_ultralytics(results)
 
-            # Filtrar por confianza
-            if detections.confidence is not None:
-                detections = detections[detections.confidence > conf_threshold]
-
-            # Procesar resultados
             result_data = self._process_detections(detections, results, frame)
 
-            # Calcular BMWP si se solicita
             if calculate_bmwp and result_data['detecciones']:
                 bmwp_result = self.calculate_bmwp(result_data['detecciones'])
                 result_data.update(bmwp_calculator.format_result_for_json(bmwp_result))
-                self.logger.info(f"🌊 BMWP calculado: {bmwp_result.total_score} ({bmwp_result.water_quality_description})")
+                self.logger.info(
+                    f"🌊 BMWP calculado: {bmwp_result.total_score} "
+                    f"({bmwp_result.water_quality_description})"
+                )
 
-            # Anotar imagen si hay detecciones
             if len(detections) > 0:
                 annotated_frame = self._annotate_image(frame, detections, results)
                 result_data["imagen_anotada_base64"] = self._encode_image(annotated_frame)
 
-                # Guardar imagen anotada si se solicita
                 if save_annotated:
-                    self._save_annotated_image(
-                        annotated_frame,
-                        image_path,
-                        output_dir
-                    )
+                    self._save_annotated_image(annotated_frame, image_path, output_dir)
             else:
                 result_data["imagen_anotada_base64"] = self._encode_image(frame)
                 self.logger.info("⚠️ No se detectaron macroinvertebrados")
 
-                # Si no hay detecciones pero se solicita BMWP, agregar valores por defecto
                 if calculate_bmwp:
                     result_data.update({
                         "bmwp_total": 0,
@@ -226,7 +227,7 @@ class YOLOInference:
             detections.confidence is not None and
             len(detections.class_id) > 0):
 
-            for class_id, conf in zip(detections.class_id, detections.confidence):
+            for class_id, conf in zip(detections.class_id, detections.confidence, strict=True):
                 if class_id < len(results.names):
                     class_name = results.names[class_id]
                     family_count[class_name] += 1
@@ -274,7 +275,7 @@ class YOLOInference:
 
         # Crear etiquetas
         labels = []
-        for class_id, confidence in zip(detections.class_id, detections.confidence):
+        for class_id, confidence in zip(detections.class_id, detections.confidence, strict=True):
             if class_id < len(results.names):
                 class_name = results.names[class_id]
                 labels.append(f"{class_name}: {confidence:.2f}")
