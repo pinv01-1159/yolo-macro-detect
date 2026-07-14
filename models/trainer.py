@@ -166,6 +166,23 @@ class YOLOTrainer:
             # Validar dataset
             self.validate_dataset(data_yaml_path)
 
+            # Fail-fast: evaluate() usa por defecto split="test" (no "val")
+            # para obtener una métrica final no sesgada, ya que val se usa
+            # para seleccionar los pesos de best.pt durante el entrenamiento.
+            # Si el split de test no existe, es mejor fallar ahora que
+            # gastar horas de cómputo entrenando y recién enterarse al
+            # llamar a evaluate().
+            dataset_dir = Path(data_yaml_path).parent
+            test_images_path = dataset_dir / "test" / "images"
+            if not test_images_path.exists():
+                raise FileNotFoundError(
+                    f"Split de 'test' no encontrado: {test_images_path}. "
+                    "evaluate() evalúa por defecto en split='test' (no 'val') "
+                    "para reportar una métrica final no sesgada, así que el "
+                    "dataset debe incluir una carpeta test/images antes de "
+                    "iniciar el entrenamiento."
+                )
+
             # Cargar modelo si no está cargado
             if self.model is None:
                 self.load_model()

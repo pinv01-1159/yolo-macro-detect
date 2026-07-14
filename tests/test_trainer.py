@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 import config as config_module
 from models.trainer import YOLOTrainer
 
@@ -32,14 +34,16 @@ class FakeYoloModel:
         return FakeMetrics(val_kwargs=kwargs)
 
 
-def _make_data_yaml(tmp_path: Path) -> Path:
-    for folder in ("train", "valid"):
+def _make_data_yaml(tmp_path: Path, with_test_split: bool = True) -> Path:
+    folders = ("train", "valid", "test") if with_test_split else ("train", "valid")
+    for folder in folders:
         (tmp_path / folder / "images").mkdir(parents=True)
     data_yaml = tmp_path / "data.yaml"
     data_yaml.write_text(
         "path: " + str(tmp_path) + "\n"
         "train: train/images\n"
         "val: valid/images\n"
+        "test: test/images\n"
         "nc: 1\n"
         "names: [Physidae]\n"
     )
@@ -95,3 +99,20 @@ def test_get_training_summary_uses_eval_metrics_when_available(tmp_path, monkeyp
     assert summary["evaluated_split"] == "test"
     assert summary["metrics"]["map50"] == 0.77
     assert summary["metrics"]["recall"] == 0.55
+
+
+def test_train_raises_before_training_when_test_split_missing(tmp_path, monkeypatch):
+    """evaluate() defaults to split='test', so a dataset without a test/
+    split must fail BEFORE training starts (not after, wasting compute)."""
+    monkeypatch.chdir(tmp_path)
+    data_yaml = _make_data_yaml(tmp_path, with_test_split=False)
+    fake_model = FakeYoloModel()
+
+    trainer = YOLOTrainer("test_experiment")
+    trainer.model = fake_model
+
+    with pytest.raises(FileNotFoundError, match="test"):
+        trainer.train(data_yaml_path=str(data_yaml), epochs=1)
+
+    # The check must happen before model.train() is ever invoked.
+    assert fake_model.train_kwargs is None
