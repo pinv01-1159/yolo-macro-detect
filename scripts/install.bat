@@ -6,70 +6,25 @@ REM Proyecto: PINV01-1159
 echo 🦐 Instalando YOLO Macroinvertebrados...
 echo ======================================
 
-REM Verificar Python
-echo [INFO] Verificando Python...
-python --version >nul 2>&1
+REM Verificar uv
+echo [INFO] Verificando uv...
+uv --version >nul 2>&1
 if errorlevel 1 (
-    echo [ERROR] Python no está instalado. Por favor instala Python 3.8 o superior.
+    echo [ERROR] uv no está instalado. Instálalo desde: https://docs.astral.sh/uv/getting-started/installation/
     pause
     exit /b 1
 )
+echo [SUCCESS] uv encontrado
 
-for /f "tokens=2" %%i in ('python --version 2^>^&1') do set PYTHON_VERSION=%%i
-echo [SUCCESS] Python %PYTHON_VERSION% encontrado
-
-REM Verificar pip
-echo [INFO] Verificando pip...
-pip --version >nul 2>&1
-if errorlevel 1 (
-    echo [ERROR] pip no está instalado. Por favor instala pip.
-    pause
-    exit /b 1
-)
-
-echo [SUCCESS] pip encontrado
-
-REM Crear entorno virtual
-echo [INFO] Creando entorno virtual...
-if exist venv (
-    echo [WARNING] El directorio venv ya existe. Eliminando...
-    rmdir /s /q venv
-)
-
-python -m venv venv
-if errorlevel 1 (
-    echo [ERROR] Error al crear el entorno virtual.
-    pause
-    exit /b 1
-)
-echo [SUCCESS] Entorno virtual creado
-
-REM Activar entorno virtual
-echo [INFO] Activando entorno virtual...
-call venv\Scripts\activate.bat
-if errorlevel 1 (
-    echo [ERROR] Error al activar el entorno virtual.
-    pause
-    exit /b 1
-)
-echo [SUCCESS] Entorno virtual activado
-
-REM Actualizar pip
-echo [INFO] Actualizando pip...
-python -m pip install --upgrade pip
-if errorlevel 1 (
-    echo [WARNING] Error al actualizar pip. Continuando...
-)
-
-REM Instalar dependencias
+REM Instalar dependencias (uv crea el entorno virtual .venv automáticamente)
 echo [INFO] Instalando dependencias...
-pip install -r requirements.txt
+uv sync
 if errorlevel 1 (
     echo [ERROR] Error al instalar dependencias.
     pause
     exit /b 1
 )
-echo [SUCCESS] Dependencias instaladas
+echo [SUCCESS] Dependencias instaladas en .venv
 
 REM Crear directorios necesarios
 echo [INFO] Creando directorios del proyecto...
@@ -110,9 +65,8 @@ echo 🎉 Instalación completada exitosamente!
 echo ======================================
 echo.
 echo Para comenzar a usar el proyecto:
-echo 1. Activa el entorno virtual: venv\Scripts\activate.bat
-echo 2. Configura tu API key de Roboflow en el archivo .env
-echo 3. Ejecuta el pipeline: python main.py --pipeline-complete
+echo 1. Configura tu API key de Roboflow en el archivo .env
+echo 2. Ejecuta el pipeline: uv run main.py --pipeline-complete
 echo.
 echo Para más información, consulta el README.md
 echo.

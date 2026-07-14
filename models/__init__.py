@@ -5,7 +5,7 @@ Este paquete contiene las clases y módulos para entrenamiento
 e inferencia de modelos YOLO.
 """
 
-from .trainer import YOLOTrainer
 from .inference import YOLOInference
+from .trainer import YOLOTrainer
 
-__all__ = ['YOLOTrainer', 'YOLOInference'] 
+__all__ = ['YOLOTrainer', 'YOLOInference']

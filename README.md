@@ -1,6 +1,6 @@
 # 🦐 YOLO Macroinvertebrados - Detección Automática de Macroinvertebrados Acuáticos
 
-[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![YOLO](https://img.shields.io/badge/YOLO-v8%2Cv11%2Cv12-green.svg)](https://github.com/ultralytics/ultralytics)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Project](https://img.shields.io/badge/Project-PINV01--1159-red.svg)]()
@@ -62,7 +62,8 @@ Sistema de visión por computadora para la detección automática de macroinvert
 
 ### Requisitos Previos
 
-- Python 3.8 o superior
+- Python 3.10 o superior
+- [uv](https://docs.astral.sh/uv/getting-started/installation/)
 - CUDA compatible (recomendado para GPU)
 - Git
 
@@ -74,20 +75,13 @@ Sistema de visión por computadora para la detección automática de macroinvert
    cd yolo-macro-detect
    ```
 
-2. **Crear entorno virtual**
+2. **Instalar dependencias**
    ```bash
-   python -m venv venv
-   source venv/bin/activate  # Linux/Mac
-   # o
-   venv\Scripts\activate     # Windows
+   uv sync
    ```
+   Esto crea automáticamente un entorno virtual en `.venv` con las dependencias fijadas en `uv.lock`. Antepón `uv run` a cualquier comando (p. ej. `uv run main.py ...`) para ejecutarlo dentro de ese entorno.
 
-3. **Instalar dependencias**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Configurar variables de entorno**
+3. **Configurar variables de entorno**
    ```bash
    cp env.example .env
    # Editar .env con tus credenciales
@@ -139,7 +133,7 @@ BMWP_CONFIDENCE_WEIGHT=True
 Ejecutar todo el proceso desde la descarga del dataset hasta el entrenamiento:
 
 ```bash
-python main.py --pipeline-complete
+uv run main.py --pipeline-complete
 ```
 
 ### Solo Configurar Dataset
@@ -147,7 +141,7 @@ python main.py --pipeline-complete
 Descargar y configurar el dataset sin entrenar:
 
 ```bash
-python main.py --setup-dataset
+uv run main.py --setup-dataset
 ```
 
 ### Solo Entrenamiento
@@ -155,7 +149,7 @@ python main.py --setup-dataset
 Entrenar modelo con dataset existente:
 
 ```bash
-python main.py --train --data-yaml datasets/data.yaml
+uv run main.py --train --data-yaml datasets/data.yaml
 ```
 
 ### Solo Predicción
@@ -163,7 +157,7 @@ python main.py --train --data-yaml datasets/data.yaml
 Realizar predicción en una imagen:
 
 ```bash
-python main.py --predict --image test.jpg --model runs/detect/macros/weights/best.pt
+uv run main.py --predict --image test.jpg --model runs/detect/macros/weights/best.pt
 ```
 
 ### Predicción con Evaluación de Calidad del Agua
@@ -171,20 +165,20 @@ python main.py --predict --image test.jpg --model runs/detect/macros/weights/bes
 Calcular índice BMWP basado en las detecciones:
 
 ```bash
-python main.py --predict --image sample.jpg --model best_model.pt --calculate-bmwp
+uv run main.py --predict --image sample.jpg --model best_model.pt --calculate-bmwp
 ```
 
 ### Opciones Avanzadas
 
 ```bash
 # Pipeline completo con parámetros personalizados
-python main.py --pipeline-complete \
+uv run main.py --pipeline-complete \
     --dataset-version 5 \
     --epochs 100 \
     --experiment-name "macros_v2"
 
 # Predicción con umbral personalizado y BMWP
-python main.py --predict \
+uv run main.py --predict \
     --image sample.jpg \
     --model best_model.pt \
     --confidence 0.5 \
@@ -328,7 +322,7 @@ print(f"BMWP: {result.total_score} - {result.water_quality_description}")
 yolo-macro-detect/
 ├── main.py                 # Script principal
 ├── config.py              # Configuración centralizada
-├── requirements.txt       # Dependencias
+├── pyproject.toml          # Dependencias y configuración (uv)
 ├── env.example           # Ejemplo de variables de entorno
 ├── README.md             # Documentación
 ├── LICENSE               # Licencia

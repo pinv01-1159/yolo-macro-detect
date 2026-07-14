@@ -18,7 +18,7 @@ Esta guía te ayudará a desplegar el sistema de detección de macroinvertebrado
 
 ### Software
 - **OS**: Ubuntu 20.04 LTS o superior
-- **Python**: 3.8+
+- **Python**: 3.10+
 - **CUDA**: 11.0+ (si usa GPU)
 - **Docker**: 20.10+ (opcional)
 
@@ -27,7 +27,7 @@ Esta guía te ayudará a desplegar el sistema de detección de macroinvertebrado
 ### 1. Crear Dockerfile
 
 ```dockerfile
-FROM python:3.9-slim
+FROM ghcr.io/astral-sh/uv:python3.12-bookworm-slim
 
 # Instalar dependencias del sistema
 RUN apt-get update && apt-get install -y \
@@ -42,14 +42,13 @@ RUN apt-get update && apt-get install -y \
 # Establecer directorio de trabajo
 WORKDIR /app
 
-# Copiar archivos de dependencias
-COPY requirements.txt .
+# Copiar archivos de dependencias e instalar (capa cacheable)
+COPY pyproject.toml uv.lock .
+RUN uv sync --locked --no-install-project
 
-# Instalar dependencias Python
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copiar código del proyecto
+# Copiar código del proyecto e instalar el paquete
 COPY . .
+RUN uv sync --locked
 
 # Crear directorios necesarios
 RUN mkdir -p logs datasets models results
@@ -58,7 +57,7 @@ RUN mkdir -p logs datasets models results
 EXPOSE 8000
 
 # Comando por defecto
-CMD ["python", "main.py", "--help"]
+CMD ["uv", "run", "main.py", "--help"]
 ```
 
 ### 2. Crear docker-compose.yml
@@ -99,7 +98,7 @@ services:
       - ./results:/app/results
     environment:
       - CUDA_VISIBLE_DEVICES=0
-    command: ["python", "api.py"]
+    command: ["uv", "run", "api.py"]
     depends_on:
       - yolo-macro-detect
     restart: unless-stopped
@@ -126,8 +125,11 @@ docker-compose logs -f
 # Actualizar sistema
 sudo apt update && sudo apt upgrade -y
 
-# Instalar dependencias
-sudo apt install -y python3 python3-pip python3-venv git nvidia-driver-470
+# Instalar dependencias del sistema
+sudo apt install -y git nvidia-driver-470
+
+# Instalar uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # Verificar GPU
 nvidia-smi
@@ -140,12 +142,8 @@ nvidia-smi
 git clone https://github.com/kevingaleano/yolo-macro-detect.git
 cd yolo-macro-detect
 
-# Crear entorno virtual
-python3 -m venv venv
-source venv/bin/activate
-
-# Instalar dependencias
-pip install -r requirements.txt
+# Instalar dependencias (uv crea el entorno virtual .venv automáticamente)
+uv sync
 
 # Configurar variables de entorno
 cp env.example .env
@@ -310,7 +308,7 @@ BACKUP_DIR="/backup/yolo-macro-detect"
 
 # Crear backup
 tar -czf "$BACKUP_DIR/backup_$DATE.tar.gz" \
-    --exclude='venv' \
+    --exclude='.venv' \
     --exclude='__pycache__' \
     --exclude='*.pyc' \
     .

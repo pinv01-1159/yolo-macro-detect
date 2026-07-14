@@ -33,49 +33,19 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Verificar Python
-print_status "Verificando Python..."
-if ! command -v python3 &> /dev/null; then
-    print_error "Python 3 no está instalado. Por favor instala Python 3.8 o superior."
+# Verificar uv
+print_status "Verificando uv..."
+if ! command -v uv &> /dev/null; then
+    print_error "uv no está instalado. Instálalo con: curl -LsSf https://astral.sh/uv/install.sh | sh"
     exit 1
 fi
 
-PYTHON_VERSION=$(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:2])))')
-print_success "Python $PYTHON_VERSION encontrado"
+print_success "uv encontrado"
 
-# Verificar pip
-print_status "Verificando pip..."
-if ! command -v pip3 &> /dev/null; then
-    print_error "pip3 no está instalado. Por favor instala pip."
-    exit 1
-fi
-
-print_success "pip3 encontrado"
-
-# Crear entorno virtual
-print_status "Creando entorno virtual..."
-if [ -d "venv" ]; then
-    print_warning "El directorio venv ya existe. Eliminando..."
-    rm -rf venv
-fi
-
-python3 -m venv venv
-print_success "Entorno virtual creado"
-
-# Activar entorno virtual
-print_status "Activando entorno virtual..."
-source venv/bin/activate
-print_success "Entorno virtual activado"
-
-# Actualizar pip
-print_status "Actualizando pip..."
-pip install --upgrade pip
-print_success "pip actualizado"
-
-# Instalar dependencias
+# Instalar dependencias (uv crea el entorno virtual .venv automáticamente)
 print_status "Instalando dependencias..."
-pip install -r requirements.txt
-print_success "Dependencias instaladas"
+uv sync
+print_success "Dependencias instaladas en .venv"
 
 # Crear directorios necesarios
 print_status "Creando directorios del proyecto..."
@@ -113,9 +83,8 @@ echo "🎉 Instalación completada exitosamente!"
 echo "======================================"
 echo ""
 echo "Para comenzar a usar el proyecto:"
-echo "1. Activa el entorno virtual: source venv/bin/activate"
-echo "2. Configura tu API key de Roboflow en el archivo .env"
-echo "3. Ejecuta el pipeline: python main.py --pipeline-complete"
+echo "1. Configura tu API key de Roboflow en el archivo .env"
+echo "2. Ejecuta el pipeline: uv run main.py --pipeline-complete"
 echo ""
 echo "Para más información, consulta el README.md"
 echo ""

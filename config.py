@@ -9,7 +9,6 @@ Proyecto: PINV01-1159
 """
 
 import os
-from typing import Optional
 
 
 class Config:
@@ -20,80 +19,80 @@ class Config:
     incluyendo conexiones con Roboflow, parámetros de entrenamiento,
     configuración de inferencia y evaluación BMWP.
     """
-    
+
     def __init__(self):
         """Inicializa la configuración con valores por defecto."""
         # Configuración de Roboflow
         self.roboflow_api_key: str = self._get_env_var(
-            "ROBOFLOW_API_KEY", 
+            "ROBOFLOW_API_KEY",
             required=True
         )
         self.roboflow_workspace: str = self._get_env_var(
-            "ROBOFLOW_WORKSPACE", 
+            "ROBOFLOW_WORKSPACE",
             default="pinv011159"
         )
         self.roboflow_project: str = self._get_env_var(
-            "ROBOFLOW_PROJECT", 
+            "ROBOFLOW_PROJECT",
             default="macroinvertebrados-acuaticos"
         )
-        
+
         # Configuración del modelo
         self.model_name: str = self._get_env_var(
-            "MODEL_NAME", 
+            "MODEL_NAME",
             default="yolov8x.pt"
         )
         self.experiment_name: str = self._get_env_var(
-            "EXPERIMENT_NAME", 
+            "EXPERIMENT_NAME",
             default="macros"
         )
         self.training_epochs: int = int(self._get_env_var(
-            "TRAINING_EPOCHS", 
+            "TRAINING_EPOCHS",
             default="50"
         ))
         self.img_size: int = int(self._get_env_var(
-            "IMG_SIZE", 
+            "IMG_SIZE",
             default="640"
         ))
         self.batch_size: int = int(self._get_env_var(
-            "BATCH_SIZE", 
+            "BATCH_SIZE",
             default="16"
         ))
         self.workers: int = int(self._get_env_var(
-            "WORKERS", 
+            "WORKERS",
             default="8"
         ))
-        
+
         # Configuración de inferencia
         self.confidence_threshold: float = float(self._get_env_var(
-            "CONFIDENCE_THRESHOLD", 
+            "CONFIDENCE_THRESHOLD",
             default="0.3"
         ))
         self.iou_threshold: float = float(self._get_env_var(
-            "IOU_THRESHOLD", 
+            "IOU_THRESHOLD",
             default="0.6"
         ))
-        
+
         # Configuración de logging
         self.log_level: str = self._get_env_var(
-            "LOG_LEVEL", 
+            "LOG_LEVEL",
             default="INFO"
         )
         self.save_results: bool = self._get_env_var(
-            "SAVE_RESULTS", 
+            "SAVE_RESULTS",
             default="True"
         ).lower() == "true"
-        
+
         # Configuración BMWP
         self.enable_bmwp: bool = self._get_env_var(
-            "ENABLE_BMWP", 
+            "ENABLE_BMWP",
             default="True"
         ).lower() == "true"
         self.bmwp_confidence_weight: bool = self._get_env_var(
-            "BMWP_CONFIDENCE_WEIGHT", 
+            "BMWP_CONFIDENCE_WEIGHT",
             default="True"
         ).lower() == "true"
-    
-    def _get_env_var(self, name: str, required: bool = False, default: Optional[str] = None) -> str:
+
+    def _get_env_var(self, name: str, required: bool = False, default: str | None = None) -> str:
         """
         Obtiene una variable de entorno.
         
@@ -109,12 +108,12 @@ class Config:
             ValueError: Si la variable es requerida pero no está definida
         """
         value = os.getenv(name, default)
-        
+
         if required and not value:
             raise ValueError(f"Variable de entorno requerida no definida: {name}")
-        
+
         return value or ""
-    
+
     def validate(self) -> bool:
         """
         Valida la configuración.
@@ -126,31 +125,31 @@ class Config:
             # Validar variables requeridas
             if not self.roboflow_api_key:
                 return False
-            
+
             # Validar rangos de valores
             if not (0.0 <= self.confidence_threshold <= 1.0):
                 return False
-            
+
             if not (0.0 <= self.iou_threshold <= 1.0):
                 return False
-            
+
             if self.training_epochs <= 0:
                 return False
-            
+
             if self.img_size <= 0:
                 return False
-            
+
             if self.batch_size <= 0:
                 return False
-            
+
             if self.workers <= 0:
                 return False
-            
+
             return True
-            
+
         except Exception:
             return False
-    
+
     def get_roboflow_config(self) -> dict:
         """
         Obtiene la configuración de Roboflow.
@@ -163,7 +162,7 @@ class Config:
             "workspace": self.roboflow_workspace,
             "project": self.roboflow_project
         }
-    
+
     def get_training_config(self) -> dict:
         """
         Obtiene la configuración de entrenamiento.
@@ -179,7 +178,7 @@ class Config:
             "batch_size": self.batch_size,
             "workers": self.workers
         }
-    
+
     def get_inference_config(self) -> dict:
         """
         Obtiene la configuración de inferencia.
@@ -194,7 +193,7 @@ class Config:
             "enable_bmwp": self.enable_bmwp,
             "bmwp_confidence_weight": self.bmwp_confidence_weight
         }
-    
+
     def get_bmwp_config(self) -> dict:
         """
         Obtiene la configuración BMWP.
@@ -206,7 +205,7 @@ class Config:
             "enable_bmwp": self.enable_bmwp,
             "bmwp_confidence_weight": self.bmwp_confidence_weight
         }
-    
+
     def __str__(self) -> str:
         """
         Representación en string de la configuración.
@@ -248,4 +247,4 @@ Validación: {'✓' if self.validate() else '✗'}
 
 
 # Instancia global de configuración
-config = Config() 
+config = Config()
