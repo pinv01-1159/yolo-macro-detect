@@ -9,12 +9,17 @@ Proyecto: PINV01-1159
 """
 
 import os
+from pathlib import Path
+
+from dotenv import load_dotenv
+
+load_dotenv(Path.cwd() / ".env", override=True)
 
 
 class Config:
     """
     Clase de configuración centralizada.
-    
+
     Maneja todas las variables de configuración del proyecto,
     incluyendo conexiones con Roboflow, parámetros de entrenamiento,
     configuración de inferencia y evaluación BMWP.
@@ -22,111 +27,70 @@ class Config:
 
     def __init__(self):
         """Inicializa la configuración con valores por defecto."""
-        # Configuración de Roboflow
-        self.roboflow_api_key: str = self._get_env_var(
-            "ROBOFLOW_API_KEY",
-            required=True
-        )
+        # Configuración de Roboflow (opcional a este nivel: solo se exige
+        # cuando algo la usa de verdad, ver DatasetManager.setup_roboflow_connection)
+        self.roboflow_api_key: str = self._get_env_var("ROBOFLOW_API_KEY", default="")
         self.roboflow_workspace: str = self._get_env_var(
-            "ROBOFLOW_WORKSPACE",
-            default="pinv011159"
+            "ROBOFLOW_WORKSPACE", default="pinv011159"
         )
         self.roboflow_project: str = self._get_env_var(
-            "ROBOFLOW_PROJECT",
-            default="macroinvertebrados-acuaticos"
+            "ROBOFLOW_PROJECT", default="macroinvertebrados-acuaticos"
         )
 
         # Configuración del modelo
-        self.model_name: str = self._get_env_var(
-            "MODEL_NAME",
-            default="yolov8x.pt"
-        )
-        self.experiment_name: str = self._get_env_var(
-            "EXPERIMENT_NAME",
-            default="macros"
-        )
-        self.training_epochs: int = int(self._get_env_var(
-            "TRAINING_EPOCHS",
-            default="50"
-        ))
-        self.img_size: int = int(self._get_env_var(
-            "IMG_SIZE",
-            default="640"
-        ))
-        self.batch_size: int = int(self._get_env_var(
-            "BATCH_SIZE",
-            default="16"
-        ))
-        self.workers: int = int(self._get_env_var(
-            "WORKERS",
-            default="8"
-        ))
+        self.model_name: str = self._get_env_var("MODEL_NAME", default="yolov8x.pt")
+        self.experiment_name: str = self._get_env_var("EXPERIMENT_NAME", default="macros")
+        self.training_epochs: int = int(self._get_env_var("TRAINING_EPOCHS", default="50"))
+        self.img_size: int = int(self._get_env_var("IMG_SIZE", default="640"))
+        self.batch_size: int = int(self._get_env_var("BATCH_SIZE", default="16"))
+        self.workers: int = int(self._get_env_var("WORKERS", default="8"))
+        self.seed: int = int(self._get_env_var("SEED", default="42"))
 
         # Configuración de inferencia
-        self.confidence_threshold: float = float(self._get_env_var(
-            "CONFIDENCE_THRESHOLD",
-            default="0.3"
-        ))
-        self.iou_threshold: float = float(self._get_env_var(
-            "IOU_THRESHOLD",
-            default="0.6"
-        ))
+        self.confidence_threshold: float = float(
+            self._get_env_var("CONFIDENCE_THRESHOLD", default="0.3")
+        )
+        self.iou_threshold: float = float(self._get_env_var("IOU_THRESHOLD", default="0.6"))
 
         # Configuración de logging
-        self.log_level: str = self._get_env_var(
-            "LOG_LEVEL",
-            default="INFO"
+        self.log_level: str = self._get_env_var("LOG_LEVEL", default="INFO")
+        self.save_results: bool = (
+            self._get_env_var("SAVE_RESULTS", default="True").lower() == "true"
         )
-        self.save_results: bool = self._get_env_var(
-            "SAVE_RESULTS",
-            default="True"
-        ).lower() == "true"
 
         # Configuración BMWP
-        self.enable_bmwp: bool = self._get_env_var(
-            "ENABLE_BMWP",
-            default="True"
-        ).lower() == "true"
-        self.bmwp_confidence_weight: bool = self._get_env_var(
-            "BMWP_CONFIDENCE_WEIGHT",
-            default="True"
-        ).lower() == "true"
+        self.enable_bmwp: bool = (
+            self._get_env_var("ENABLE_BMWP", default="True").lower() == "true"
+        )
+        self.bmwp_confidence_weight: bool = (
+            self._get_env_var("BMWP_CONFIDENCE_WEIGHT", default="True").lower() == "true"
+        )
 
-    def _get_env_var(self, name: str, required: bool = False, default: str | None = None) -> str:
+    def _get_env_var(self, name: str, default: str | None = None) -> str:
         """
         Obtiene una variable de entorno.
-        
+
         Args:
             name: Nombre de la variable
-            required: Si es requerida
             default: Valor por defecto
-            
+
         Returns:
             Valor de la variable de entorno
-            
-        Raises:
-            ValueError: Si la variable es requerida pero no está definida
         """
-        value = os.getenv(name, default)
-
-        if required and not value:
-            raise ValueError(f"Variable de entorno requerida no definida: {name}")
-
-        return value or ""
+        return os.getenv(name, default) or ""
 
     def validate(self) -> bool:
         """
         Valida la configuración.
-        
+
+        La presencia de ROBOFLOW_API_KEY no se valida acá: no toda
+        operación del pipeline la necesita (p. ej. --predict). La exige
+        DatasetManager.setup_roboflow_connection() cuando corresponde.
+
         Returns:
             True si la configuración es válida
         """
         try:
-            # Validar variables requeridas
-            if not self.roboflow_api_key:
-                return False
-
-            # Validar rangos de valores
             if not (0.0 <= self.confidence_threshold <= 1.0):
                 return False
 
@@ -153,7 +117,7 @@ class Config:
     def get_roboflow_config(self) -> dict:
         """
         Obtiene la configuración de Roboflow.
-        
+
         Returns:
             Diccionario con configuración de Roboflow
         """
@@ -166,7 +130,7 @@ class Config:
     def get_training_config(self) -> dict:
         """
         Obtiene la configuración de entrenamiento.
-        
+
         Returns:
             Diccionario con configuración de entrenamiento
         """
@@ -176,13 +140,14 @@ class Config:
             "epochs": self.training_epochs,
             "img_size": self.img_size,
             "batch_size": self.batch_size,
-            "workers": self.workers
+            "workers": self.workers,
+            "seed": self.seed,
         }
 
     def get_inference_config(self) -> dict:
         """
         Obtiene la configuración de inferencia.
-        
+
         Returns:
             Diccionario con configuración de inferencia
         """
@@ -197,7 +162,7 @@ class Config:
     def get_bmwp_config(self) -> dict:
         """
         Obtiene la configuración BMWP.
-        
+
         Returns:
             Diccionario con configuración BMWP
         """
@@ -209,7 +174,7 @@ class Config:
     def __str__(self) -> str:
         """
         Representación en string de la configuración.
-        
+
         Returns:
             String con la configuración
         """
@@ -229,6 +194,7 @@ Modelo:
   - Tamaño imagen: {self.img_size}
   - Batch size: {self.batch_size}
   - Workers: {self.workers}
+  - Semilla: {self.seed}
 
 Inferencia:
   - Umbral confianza: {self.confidence_threshold}
