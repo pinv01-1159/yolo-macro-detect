@@ -1,3 +1,6 @@
+# Subagent-driven-development scratch state (progress ledger, task briefs)
+.superpowers/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
