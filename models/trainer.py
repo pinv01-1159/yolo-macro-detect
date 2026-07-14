@@ -34,7 +34,7 @@ class YOLOTrainer:
         """
         self.experiment_name = experiment_name or config.experiment_name
         self.logger = get_training_logger(self.experiment_name)
-        self.model = None
+        self.model: YOLO | None = None
         self.training_results = None
         self.eval_metrics: Any = None
 
@@ -169,6 +169,7 @@ class YOLOTrainer:
             # Cargar modelo si no está cargado
             if self.model is None:
                 self.load_model()
+            assert self.model is not None
 
             # Configurar parámetros de entrenamiento
             train_kwargs = {

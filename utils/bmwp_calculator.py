@@ -13,7 +13,14 @@ Proyecto: PINV01-1159
 """
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, TypedDict
+
+
+class WaterQualityClassInfo(TypedDict):
+    """Estructura de una entrada de clasificación de calidad del agua."""
+    min: float
+    max: float
+    description: str
 
 
 @dataclass
@@ -49,7 +56,7 @@ class BMWPCalculator:
     }
 
     # Clasificación de calidad del agua según BMWP
-    WATER_QUALITY_CLASSES = {
+    WATER_QUALITY_CLASSES: dict[str, WaterQualityClassInfo] = {
         "I": {"min": 101, "max": float('inf'), "description": "Muy limpia"},
         "II": {"min": 61, "max": 100, "description": "Aceptable"},
         "III": {"min": 36, "max": 60, "description": "Dudosa"},
@@ -160,7 +167,7 @@ class BMWPCalculator:
         """
         return list(self.available_families)
 
-    def get_water_quality_info(self) -> dict[str, dict[str, Any]]:
+    def get_water_quality_info(self) -> dict[str, WaterQualityClassInfo]:
         """
         Obtiene información sobre las clases de calidad del agua.
 

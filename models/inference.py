@@ -44,7 +44,7 @@ class YOLOInference:
             model_path: Ruta al modelo entrenado (opcional)
         """
         self.logger = get_inference_logger()
-        self.model = None
+        self.model: YOLO | None = None
         self.model_path = model_path
 
         if model_path:
@@ -127,9 +127,14 @@ class YOLOInference:
             # conf/iou se pasan directamente al modelo: Ultralytics aplica el
             # umbral de confianza y el NMS con el IoU configurado antes de
             # devolver las detecciones, así que no hace falta re-filtrar acá.
+            # ultralytics' Model.__call__ is typed to return
+            # Iterator[...] | list[Results] | list[Tensor] regardless of the
+            # `stream` argument's value, so mypy can't narrow indexability
+            # from the signature alone. stream defaults to False here, which
+            # always yields a list, so indexing is safe at runtime.
             results = self.model(
                 frame, imgsz=img_size, conf=conf_threshold, iou=iou_threshold, verbose=False
-            )[0]
+            )[0]  # type: ignore[index]
             detections = sv.Detections.from_ultralytics(results)
 
             result_data = self._process_detections(detections, results, frame)
@@ -219,7 +224,7 @@ class YOLOInference:
             Datos procesados de las detecciones
         """
         # Contar detecciones por familia
-        family_count = defaultdict(int)
+        family_count: defaultdict[str, int] = defaultdict(int)
         family_confidence = defaultdict(list)
 
         # Verificar que tenemos datos válidos
@@ -289,8 +294,14 @@ class YOLOInference:
 
         # Aplicar anotaciones
         annotated_frame = box_annotator.annotate(scene=frame, detections=detections)
-        annotated_frame = label_annotator.annotate(
-            scene=annotated_frame,
+        # supervision's @ensure_cv2_image_for_class_method decorator accepts
+        # both np.ndarray and PIL.Image.Image at runtime (see
+        # supervision/utils/conversion.py), but is typed as `-> F`, which
+        # preserves the wrapped method's narrower `Image.Image`-only
+        # signature. This is a stub gap in the third-party library, not a
+        # real type error: annotated_frame is always an ndarray here.
+        annotated_frame = label_annotator.annotate(  # type: ignore[assignment]
+            scene=annotated_frame,  # type: ignore[arg-type]
             detections=detections,
             labels=labels
         )

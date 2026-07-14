@@ -250,21 +250,21 @@ class DatasetManager:
             Información básica del dataset
         """
         try:
-            dataset_path = Path(dataset_path)
+            path = Path(dataset_path)
 
             # Contar imágenes en cada split
-            train_count = len(list((dataset_path / "train").glob("*.jpg"))) + len(
-                list((dataset_path / "train").glob("*.png"))
+            train_count = len(list((path / "train").glob("*.jpg"))) + len(
+                list((path / "train").glob("*.png"))
             )
-            val_count = len(list((dataset_path / "valid").glob("*.jpg"))) + len(
-                list((dataset_path / "valid").glob("*.png"))
+            val_count = len(list((path / "valid").glob("*.jpg"))) + len(
+                list((path / "valid").glob("*.png"))
             )
-            test_count = len(list((dataset_path / "test").glob("*.jpg"))) + len(
-                list((dataset_path / "test").glob("*.png"))
+            test_count = len(list((path / "test").glob("*.jpg"))) + len(
+                list((path / "test").glob("*.png"))
             )
 
             # Obtener clases desde las etiquetas
-            classes = self._get_classes_from_labels(str(dataset_path))
+            classes = self._get_classes_from_labels(str(path))
 
             return {
                 "classes": classes,
@@ -297,12 +297,12 @@ class DatasetManager:
             Lista de nombres de clases
         """
         try:
-            dataset_path = Path(dataset_path)
+            path = Path(dataset_path)
             classes = set()
 
             # Buscar en train, valid y test
             for split in ["train", "valid", "test"]:
-                labels_path = dataset_path / split / "labels"
+                labels_path = path / split / "labels"
                 if labels_path.exists():
                     for label_file in labels_path.glob("*.txt"):
                         with open(label_file) as f:
@@ -354,16 +354,16 @@ class DatasetManager:
         self.logger.info(f"🔍 Validando estructura del dataset: {dataset_path}")
 
         try:
-            dataset_path = Path(dataset_path)
+            path = Path(dataset_path)
 
             # Verificar que existe
-            if not dataset_path.exists():
-                raise FileNotFoundError(f"Dataset no encontrado: {dataset_path}")
+            if not path.exists():
+                raise FileNotFoundError(f"Dataset no encontrado: {path}")
 
             # Verificar archivo data.yaml
-            data_yaml_path = dataset_path / "data.yaml"
+            data_yaml_path = path / "data.yaml"
             if not data_yaml_path.exists():
-                raise FileNotFoundError(f"Archivo data.yaml no encontrado en: {dataset_path}")
+                raise FileNotFoundError(f"Archivo data.yaml no encontrado en: {path}")
 
             # Cargar y validar data.yaml
             import yaml
@@ -386,7 +386,7 @@ class DatasetManager:
 
             for split_key, folder_name in split_mapping.items():
                 # Buscar directamente en la estructura del dataset
-                split_images_path = dataset_path / folder_name / "images"
+                split_images_path = path / folder_name / "images"
                 if not split_images_path.exists():
                     raise FileNotFoundError(
                         f"Ruta de {split_key} no encontrada: {split_images_path}"
@@ -430,10 +430,10 @@ class DatasetManager:
                 raise ValueError("Estructura del dataset inválida")
 
             # Obtener información básica
-            dataset_path = Path(dataset_path)
-            train_path = dataset_path / "train"
-            val_path = dataset_path / "valid"
-            test_path = dataset_path / "test"
+            path = Path(dataset_path)
+            train_path = path / "train"
+            val_path = path / "valid"
+            test_path = path / "test"
 
             # Contar imágenes
             train_images = len(list(train_path.glob("*.jpg"))) + len(list(train_path.glob("*.png")))
@@ -441,7 +441,7 @@ class DatasetManager:
             test_images = len(list(test_path.glob("*.jpg"))) + len(list(test_path.glob("*.png")))
 
             # Obtener clases
-            classes = self._get_classes_from_labels(dataset_path)
+            classes = self._get_classes_from_labels(str(path))
 
             return {
                 "total_images": train_images + val_images + test_images,

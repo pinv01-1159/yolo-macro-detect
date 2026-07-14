@@ -7,6 +7,7 @@ import csv
 import json
 import shutil
 import time
+from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
@@ -115,7 +116,7 @@ class ModelReport:
             boot_r.append(recalls[idx].mean())
             boot_f1.append(f1s[idx].mean())
 
-        def _ci(values: list[float]) -> dict[str, float]:
+        def _ci(values: Sequence[float]) -> dict[str, float]:
             arr = np.array(values)
             return {
                 "mean": float(arr.mean()),
