@@ -99,6 +99,16 @@ def test_bootstrap_ci_bounds_contain_mean(tmp_path, monkeypatch):
     assert report["bootstrap_ci_95"]["n_images"] == 2
 
 
+def test_bootstrap_ci_markdown_disambiguates_from_overall_metrics(tmp_path, monkeypatch):
+    report_obj = _make_model_report(tmp_path, monkeypatch)
+    output_dir = tmp_path / "report_out"
+
+    report_obj.generate(metrics=FakeMetrics(), output_dir=output_dir)
+
+    md_content = (output_dir / "report.md").read_text(encoding="utf-8")
+    assert "no es el mismo estimador que las métricas generales de arriba" in md_content
+
+
 def test_output_files_created(tmp_path, monkeypatch):
     report_obj = _make_model_report(tmp_path, monkeypatch)
     output_dir = tmp_path / "report_out"

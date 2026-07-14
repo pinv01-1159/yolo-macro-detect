@@ -205,7 +205,11 @@ class ModelReport:
 
         if "bootstrap_ci_95" in report:
             ci = report["bootstrap_ci_95"]
-            lines.append(f"## Intervalo de confianza 95% (bootstrap, n={ci['n_images']} imágenes)")
+            lines.append(
+                "## Intervalo de confianza 95% — precisión/recall/F1 promediados por "
+                f"imagen a IoU=0.5 (bootstrap, n={ci['n_images']} imágenes) — no es el "
+                "mismo estimador que las métricas generales de arriba"
+            )
             for metric_name in ("precision", "recall", "f1"):
                 m = ci[metric_name]
                 lines.append(
