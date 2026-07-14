@@ -185,6 +185,7 @@ class MacroinvertebratePipeline:
                      image_path: str,
                      model_path: str,
                      conf_threshold: float | None = None,
+                     iou_threshold: float | None = None,
                      save_annotated: bool = True,
                      calculate_bmwp: bool = False) -> dict:
         """
@@ -194,6 +195,7 @@ class MacroinvertebratePipeline:
             image_path: Ruta a la imagen
             model_path: Ruta al modelo entrenado
             conf_threshold: Umbral de confianza
+            iou_threshold: Umbral de IoU para NMS
             save_annotated: Si guardar imagen anotada
             calculate_bmwp: Si calcular el índice BMWP
 
@@ -210,6 +212,7 @@ class MacroinvertebratePipeline:
             results = self.inference.predict_image(
                 image_path=image_path,
                 conf_threshold=conf_threshold,
+                iou_threshold=iou_threshold,
                 save_annotated=save_annotated,
                 calculate_bmwp=calculate_bmwp
             )
@@ -335,6 +338,12 @@ Ejemplos de uso:
         help="Umbral de confianza para predicción"
     )
 
+    parser.add_argument(
+        "--iou",
+        type=float,
+        help="Umbral de IoU (NMS) para predicción"
+    )
+
     # Argumentos adicionales
     parser.add_argument(
         "--save-annotated",
@@ -399,6 +408,7 @@ Ejemplos de uso:
                 image_path=args.image,
                 model_path=args.model,
                 conf_threshold=args.confidence,
+                iou_threshold=args.iou,
                 save_annotated=args.save_annotated,
                 calculate_bmwp=args.calculate_bmwp
             )

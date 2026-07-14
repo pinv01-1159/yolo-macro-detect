@@ -75,6 +75,36 @@ def test_train_model_generates_model_report_reusing_eval_metrics(tmp_path, monke
     assert str(generated["output_dir"]) == str(tmp_path / "results" / "exp1" / "model_report")
 
 
+def test_predict_image_passes_iou_threshold_through(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("ROBOFLOW_API_KEY", raising=False)
+    monkeypatch.setattr("main.YOLOTrainer", FakeTrainer)
+
+    calls = {}
+
+    class FakeInference:
+        def __init__(self, model_path):
+            calls["model_path"] = model_path
+
+        def predict_image(self, **kwargs):
+            calls["predict_kwargs"] = kwargs
+            return {"detecciones": [], "total_detecciones": 0, "familias_detectadas": 0}
+
+        def export_results(self, results, output_file):
+            pass
+
+    monkeypatch.setattr("main.YOLOInference", FakeInference)
+
+    pipeline = MacroinvertebratePipeline()
+    pipeline.predict_image(
+        image_path="fake.jpg",
+        model_path="fake.pt",
+        iou_threshold=0.5,
+    )
+
+    assert calls["predict_kwargs"]["iou_threshold"] == 0.5
+
+
 def test_cli_dataset_report_flag_invokes_report(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
     monkeypatch.delenv("ROBOFLOW_API_KEY", raising=False)
