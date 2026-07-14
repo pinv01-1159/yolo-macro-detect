@@ -26,7 +26,9 @@ classifiers = [
 ]
 dependencies = [
     "numpy>=2.2.6",
-    "opencv-python>=4.11.0.86",
+    "opencv-python-headless>=4.10.0.84",
+    "matplotlib>=3.8",
+    "python-dotenv>=1.0",
     "pyyaml>=6.0.2",
     "roboflow>=1.1.66",
     "supervision>=0.25.1",
@@ -43,7 +45,7 @@ yolo-macro-detect = "main:main"
 [dependency-groups]
 dev = [
     "ruff>=0.8",
-    "pytest>=6.0",
+    "pytest>=7.0",
     "pytest-cov>=2.0",
     "mypy>=0.800",
 ]
@@ -55,9 +57,17 @@ target-version = "py310"
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B"]
 
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.mypy]
+python_version = "3.10"
+ignore_missing_imports = true
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["models", "utils"]
+packages = ["models", "utils", "data", "reports"]

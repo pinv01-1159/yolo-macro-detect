@@ -2754,10 +2754,13 @@ name = "yolo-macro-detect"
 version = "1.0.0"
 source = { editable = "." }
 dependencies = [
+    { name = "matplotlib", version = "3.10.9", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "matplotlib", version = "3.11.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "numpy", version = "2.2.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*'" },
     { name = "numpy", version = "2.5.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
-    { name = "opencv-python" },
+    { name = "opencv-python-headless" },
+    { name = "python-dotenv" },
     { name = "pyyaml" },
     { name = "roboflow" },
     { name = "supervision" },
@@ -2774,8 +2777,10 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "matplotlib", specifier = ">=3.8" },
     { name = "numpy", specifier = ">=2.2.6" },
-    { name = "opencv-python", specifier = ">=4.11.0.86" },
+    { name = "opencv-python-headless", specifier = ">=4.10.0.84" },
+    { name = "python-dotenv", specifier = ">=1.0" },
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "roboflow", specifier = ">=1.1.66" },
     { name = "supervision", specifier = ">=0.25.1" },
@@ -2785,7 +2790,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "mypy", specifier = ">=0.800" },
-    { name = "pytest", specifier = ">=6.0" },
+    { name = "pytest", specifier = ">=7.0" },
     { name = "pytest-cov", specifier = ">=2.0" },
     { name = "ruff", specifier = ">=0.8" },
 ]
