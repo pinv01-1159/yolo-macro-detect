@@ -45,7 +45,7 @@ class DatasetManager:
                                  project_name: str | None = None):
         """
         Configura la conexión con Roboflow.
-        
+
         Args:
             api_key: API key de Roboflow (usa config por defecto)
             workspace: Workspace de Roboflow (usa config por defecto)
@@ -54,6 +54,12 @@ class DatasetManager:
         api_key = api_key or config.roboflow_api_key
         workspace = workspace or config.roboflow_workspace
         project_name = project_name or config.roboflow_project
+
+        if not api_key:
+            raise ValueError(
+                "ROBOFLOW_API_KEY no configurado. Definilo en tu .env o pasalo "
+                "explícitamente a setup_roboflow_connection(api_key=...)."
+            )
 
         self.logger.info("🔗 Configurando conexión con Roboflow")
         self.logger.info(f"   - Workspace: {workspace}")
