@@ -20,6 +20,7 @@ from pathlib import Path
 from config import config
 from data import DatasetManager
 from models import YOLOInference, YOLOTrainer
+from reports import DatasetReport, ModelReport
 from utils.logger import setup_logger
 
 
@@ -118,7 +119,7 @@ class MacroinvertebratePipeline:
 
             # Evaluar en el split de test (no val: ese ya se usó para elegir best.pt)
             self.logger.info("📊 Evaluando modelo en el split de test...")
-            self.trainer.evaluate(model_path, data_yaml_path)
+            eval_metrics = self.trainer.evaluate(model_path, data_yaml_path)
 
             # Obtener resumen y persistirlo como registro del experimento
             summary = self.trainer.get_training_summary()
@@ -127,11 +128,17 @@ class MacroinvertebratePipeline:
             self.logger.info(f"   - Precisión: {summary['metrics']['precision']:.4f}")
             self.logger.info(f"   - Recall: {summary['metrics']['recall']:.4f}")
 
-            results_dir = Path("results") / experiment_name
+            results_dir = (Path("results") / experiment_name).resolve()
             results_dir.mkdir(parents=True, exist_ok=True)
             with open(results_dir / "eval_metrics.json", "w", encoding="utf-8") as f:
                 json.dump(summary, f, indent=2, ensure_ascii=False)
             self.logger.info(f"   - Métricas guardadas en: {results_dir / 'eval_metrics.json'}")
+
+            self.logger.info("📊 Generando reporte estadístico del modelo...")
+            ModelReport(model_path, data_yaml_path).generate(
+                metrics=eval_metrics,
+                output_dir=results_dir / "model_report"
+            )
 
             return model_path
 
@@ -273,6 +280,18 @@ Ejemplos de uso:
         help="Solo realizar predicción"
     )
 
+    parser.add_argument(
+        "--dataset-report",
+        action="store_true",
+        help="Generar reporte estadístico de auditoría del dataset (requiere --data-yaml)"
+    )
+
+    parser.add_argument(
+        "--model-report",
+        action="store_true",
+        help="Generar reporte estadístico de evaluación del modelo (requiere --model y --data-yaml)"
+    )
+
     # Argumentos de configuración
     parser.add_argument(
         "--dataset-version",
@@ -402,6 +421,20 @@ Ejemplos de uso:
                     print("   - Detalles por familia:")
                     for det in results['detalles_familias']:
                         print(f"     * {det['familia']}: {det['cantidad']} (BMWP: {det['bmwp']})")
+
+        elif args.dataset_report:
+            if not args.data_yaml:
+                print("❌ Error: --data-yaml es requerido para --dataset-report")
+                sys.exit(1)
+            DatasetReport(args.data_yaml).generate()
+            print("\n✅ Reporte de dataset generado en: results/dataset_report/")
+
+        elif args.model_report:
+            if not args.model or not args.data_yaml:
+                print("❌ Error: --model y --data-yaml son requeridos para --model-report")
+                sys.exit(1)
+            ModelReport(args.model, args.data_yaml).generate()
+            print("\n✅ Reporte de modelo generado en: results/model_report/")
 
         else:
             # Mostrar ayuda si no se especifican argumentos

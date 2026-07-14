@@ -29,6 +29,15 @@ def test_train_model_persists_eval_metrics_json(tmp_path, monkeypatch):
     monkeypatch.delenv("ROBOFLOW_API_KEY", raising=False)
     monkeypatch.setattr("main.YOLOTrainer", FakeTrainer)
 
+    class FakeModelReport:
+        def __init__(self, model_path, data_yaml_path):
+            pass
+
+        def generate(self, metrics=None, output_dir=None):
+            return {}
+
+    monkeypatch.setattr("main.ModelReport", FakeModelReport)
+
     pipeline = MacroinvertebratePipeline()
     pipeline.train_model(data_yaml_path="fake_data.yaml", experiment_name="exp1")
 
@@ -37,3 +46,53 @@ def test_train_model_persists_eval_metrics_json(tmp_path, monkeypatch):
     saved = json.loads(metrics_file.read_text())
     assert saved["metrics"]["map50"] == 0.9
     assert saved["evaluated_split"] == "test"
+
+
+def test_train_model_generates_model_report_reusing_eval_metrics(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("ROBOFLOW_API_KEY", raising=False)
+    monkeypatch.setattr("main.YOLOTrainer", FakeTrainer)
+
+    generated = {}
+
+    class FakeModelReport:
+        def __init__(self, model_path, data_yaml_path):
+            generated["model_path"] = model_path
+            generated["data_yaml_path"] = data_yaml_path
+
+        def generate(self, metrics=None, output_dir=None):
+            generated["metrics"] = metrics
+            generated["output_dir"] = output_dir
+            return {}
+
+    monkeypatch.setattr("main.ModelReport", FakeModelReport)
+
+    pipeline = MacroinvertebratePipeline()
+    pipeline.train_model(data_yaml_path="fake_data.yaml", experiment_name="exp1")
+
+    assert generated["model_path"] == "fake/best.pt"
+    assert generated["metrics"] is not None
+    assert str(generated["output_dir"]) == str(tmp_path / "results" / "exp1" / "model_report")
+
+
+def test_cli_dataset_report_flag_invokes_report(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.delenv("ROBOFLOW_API_KEY", raising=False)
+    monkeypatch.setattr("main.YOLOTrainer", FakeTrainer)
+
+    calls = {}
+
+    class FakeDatasetReport:
+        def __init__(self, data_yaml_path):
+            calls["data_yaml_path"] = data_yaml_path
+
+        def generate(self):
+            calls["generated"] = True
+
+    monkeypatch.setattr("main.DatasetReport", FakeDatasetReport)
+    monkeypatch.setattr("sys.argv", ["main.py", "--dataset-report", "--data-yaml", "fake.yaml"])
+
+    import main
+    main.main()
+
+    assert calls == {"data_yaml_path": "fake.yaml", "generated": True}
