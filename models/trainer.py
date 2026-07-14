@@ -36,6 +36,7 @@ class YOLOTrainer:
         self.logger = get_training_logger(self.experiment_name)
         self.model = None
         self.training_results = None
+        self.eval_metrics: Any = None
 
         # Crear directorios necesarios
         self._setup_directories()
@@ -127,18 +128,20 @@ class YOLOTrainer:
               img_size: int | None = None,
               batch_size: int | None = None,
               workers: int | None = None,
+              seed: int | None = None,
               **kwargs) -> str:
         """
         Entrena el modelo YOLO.
-        
+
         Args:
             data_yaml_path: Ruta al archivo data.yaml
             epochs: Número de épocas (usa config por defecto)
             img_size: Tamaño de imagen (usa config por defecto)
             batch_size: Tamaño del batch (usa config por defecto)
             workers: Número de workers (usa config por defecto)
+            seed: Semilla de reproducibilidad (usa config por defecto)
             **kwargs: Parámetros adicionales para el entrenamiento
-            
+
         Returns:
             Ruta al mejor modelo entrenado
         """
@@ -147,6 +150,7 @@ class YOLOTrainer:
         img_size = img_size or config.img_size
         batch_size = batch_size or config.batch_size
         workers = workers or config.workers
+        seed = seed if seed is not None else config.seed
 
         self.logger.info("🚀 Iniciando entrenamiento del modelo")
         self.logger.info(f"   - Experimento: {self.experiment_name}")
@@ -154,6 +158,7 @@ class YOLOTrainer:
         self.logger.info(f"   - Tamaño imagen: {img_size}")
         self.logger.info(f"   - Batch size: {batch_size}")
         self.logger.info(f"   - Workers: {workers}")
+        self.logger.info(f"   - Semilla: {seed}")
 
         try:
             # Validar dataset
@@ -171,6 +176,7 @@ class YOLOTrainer:
                 'batch': batch_size,
                 'workers': workers,
                 'name': self.experiment_name,
+                'seed': seed,
                 'save': True,
                 'save_period': 10,  # Guardar cada 10 épocas
                 'patience': 20,     # Early stopping
@@ -199,40 +205,46 @@ class YOLOTrainer:
     def evaluate(self,
                 model_path: str,
                 data_yaml_path: str,
+                split: str = "test",
                 conf_threshold: float | None = None,
-                iou_threshold: float | None = None) -> dict[str, Any]:
+                iou_threshold: float | None = None) -> Any:
         """
-        Evalúa el modelo entrenado.
-        
+        Evalúa el modelo entrenado en un split held-out.
+
+        Por defecto evalúa en 'test', no en 'val': el split de validación ya
+        se usó para elegir los pesos de best.pt durante el entrenamiento, así
+        que reportarlo como métrica final estaría sesgado.
+
         Args:
             model_path: Ruta al modelo entrenado
             data_yaml_path: Ruta al archivo data.yaml
+            split: Split del dataset a evaluar ('test', 'val' o 'train')
             conf_threshold: Umbral de confianza (usa config por defecto)
             iou_threshold: Umbral de IoU (usa config por defecto)
-            
+
         Returns:
-            Métricas de evaluación
+            Objeto de métricas de Ultralytics (DetMetrics)
         """
         conf_threshold = conf_threshold or config.confidence_threshold
         iou_threshold = iou_threshold or config.iou_threshold
 
-        self.logger.info("📊 Evaluando rendimiento del modelo")
+        self.logger.info(f"📊 Evaluando rendimiento del modelo (split: {split})")
         self.logger.info(f"   - Modelo: {model_path}")
         self.logger.info(f"   - Umbral confianza: {conf_threshold}")
         self.logger.info(f"   - Umbral IoU: {iou_threshold}")
 
         try:
-            # Cargar modelo para evaluación
             eval_model = YOLO(model_path)
 
-            # Realizar evaluación
             metrics = eval_model.val(
                 data=data_yaml_path,
                 conf=conf_threshold,
                 iou=iou_threshold,
-                split='val',
+                split=split,
+                plots=True,
                 verbose=True
             )
+            self.eval_metrics = metrics
 
             self.logger.info("✅ Evaluación completada")
             self.logger.info(f"   - mAP50: {metrics.box.map50:.4f}")
@@ -249,20 +261,39 @@ class YOLOTrainer:
     def get_training_summary(self) -> dict[str, Any]:
         """
         Obtiene un resumen del entrenamiento.
-        
+
+        Prioriza las métricas de evaluate() (evaluación explícita, por
+        defecto en el split de test) sobre las métricas internas del
+        entrenamiento, que corresponden al split de validación usado para
+        seleccionar los pesos.
+
         Returns:
             Resumen del entrenamiento
         """
+        if self.eval_metrics is not None:
+            box = self.eval_metrics.box
+            return {
+                "experiment_name": self.experiment_name,
+                "model_path": f"runs/detect/{self.experiment_name}/weights/best.pt",
+                "evaluated_split": "test",
+                "metrics": {
+                    "map50": float(box.map50),
+                    "map50_95": float(box.map),
+                    "precision": float(box.mp),
+                    "recall": float(box.mr),
+                },
+            }
+
         if self.training_results is None:
             return {"error": "No hay resultados de entrenamiento disponibles"}
 
         try:
-            # Obtener métricas del entrenamiento
             metrics = self.training_results.results_dict
 
-            summary = {
+            return {
                 "experiment_name": self.experiment_name,
                 "model_path": f"runs/detect/{self.experiment_name}/weights/best.pt",
+                "evaluated_split": "val (entrenamiento, sin evaluate() explícito)",
                 "metrics": {
                     "map50": metrics.get("metrics/mAP50(B)", 0),
                     "map50_95": metrics.get("metrics/mAP50-95(B)", 0),
@@ -272,11 +303,8 @@ class YOLOTrainer:
                 "training_info": {
                     "epochs": metrics.get("epoch", 0),
                     "total_time": metrics.get("train/epoch", 0),
-                }
+                },
             }
-
-            return summary
-
         except Exception as e:
             self.logger.error(f"Error al obtener resumen: {e}")
             return {"error": str(e)}
