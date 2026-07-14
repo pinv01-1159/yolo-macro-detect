@@ -50,6 +50,15 @@ dev = [
     "mypy>=0.800",
 ]
 
+[tool.uv]
+# ultralytics and supervision both depend on plain "opencv-python" (GUI build,
+# needs libGL). We only want opencv-python-headless installed (see the
+# opencv-python-headless entry in [project.dependencies]): both packages ship
+# files at the same "cv2/" path, so having both installed makes which one
+# "wins" dependent on install order — this override voids any transitive
+# requirement for "opencv-python" so only the headless build is ever installed.
+override-dependencies = ["opencv-python; sys_platform == 'never_match_anything'"]
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"
