@@ -188,7 +188,14 @@ class YOLOTrainer:
                 self.load_model()
             assert self.model is not None
 
-            # Configurar parámetros de entrenamiento
+            # Configurar parámetros de entrenamiento.
+            #
+            # Los valores de augmentación no son los de fábrica: el dataset es
+            # chico (~1.7k imágenes de entrenamiento) y cada familia se fotografió
+            # en pocas sesiones, así que fondo/iluminación están correlacionados
+            # con la clase. La augmentación fuerte de color, geometría y mosaico
+            # rompe ese atajo y obliga al modelo a mirar la morfología del bicho.
+            # Todo es sobreescribible vía **kwargs.
             train_kwargs = {
                 'data': data_yaml_path,
                 'epochs': epochs,
@@ -197,9 +204,20 @@ class YOLOTrainer:
                 'workers': workers,
                 'name': self.experiment_name,
                 'seed': seed,
+                'deterministic': True,
                 'save': True,
                 'save_period': 10,  # Guardar cada 10 épocas
-                'patience': 20,     # Early stopping
+                'patience': 30,     # Early stopping (dataset chico: converge lento)
+                'cos_lr': True,
+                'amp': True,        # mixed precision: entra en 6 GB de VRAM
+                # --- augmentación anti-atajo ---
+                'hsv_h': 0.02, 'hsv_s': 0.8, 'hsv_v': 0.5,  # color/iluminación de sesión
+                'degrees': 20.0,    # el espécimen en bandeja no tiene "arriba"
+                'translate': 0.15, 'scale': 0.6, 'shear': 5.0,
+                'fliplr': 0.5, 'flipud': 0.5,
+                'mosaic': 1.0, 'close_mosaic': 15,
+                'mixup': 0.1,
+                'erasing': 0.4,     # ocluye partes: penaliza memorizar la textura del fondo
                 'verbose': True,
                 **kwargs
             }
