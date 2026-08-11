@@ -14,7 +14,10 @@ Fecha: 2024
 
 import argparse
 import json
+import platform
+import subprocess
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 from config import config
@@ -22,6 +25,57 @@ from data import DatasetManager
 from models import YOLOInference, YOLOTrainer
 from reports import DatasetReport, ModelReport
 from utils.logger import setup_logger
+
+
+def _capture_environment_metadata(
+    data_yaml_path: str,
+    experiment_name: str,
+    epochs: int,
+    started_at: str,
+) -> dict:
+    """Metadata de reproducibilidad para acompañar los resultados crudos:
+    versiones, hardware, commit de código y config efectiva del run.
+    No se puede reconstruir después de que el entrenamiento termina."""
+    import torch
+    import ultralytics
+
+    try:
+        git_commit = subprocess.check_output(
+            ["git", "rev-parse", "HEAD"], text=True, stderr=subprocess.DEVNULL
+        ).strip()
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        git_commit = "unknown"
+
+    gpu_name = torch.cuda.get_device_name(0) if torch.cuda.is_available() else None
+
+    dataset_dir = Path(data_yaml_path).parent
+    split_report_path = dataset_dir / "split_report.json"
+    split_report = None
+    if split_report_path.exists():
+        with open(split_report_path, encoding="utf-8") as f:
+            split_report = json.load(f)
+
+    return {
+        "experiment_name": experiment_name,
+        "started_at": started_at,
+        "finished_at": datetime.now(timezone.utc).isoformat(),
+        "git_commit": git_commit,
+        "python_version": platform.python_version(),
+        "torch_version": torch.__version__,
+        "cuda_version": torch.version.cuda,
+        "ultralytics_version": ultralytics.__version__,
+        "gpu": gpu_name,
+        "config": {
+            "model_name": config.model_name,
+            "epochs": epochs,
+            "img_size": config.img_size,
+            "batch_size": config.batch_size,
+            "workers": config.workers,
+            "seed": config.seed,
+        },
+        "data_yaml_path": str(data_yaml_path),
+        "dataset_split_report": split_report,
+    }
 
 
 class MacroinvertebratePipeline:
@@ -99,6 +153,7 @@ class MacroinvertebratePipeline:
             Ruta al modelo entrenado
         """
         self.logger.info("🏋️ Iniciando entrenamiento del modelo...")
+        started_at = datetime.now(timezone.utc).isoformat()
 
         try:
             # Inicializar trainer
@@ -133,6 +188,16 @@ class MacroinvertebratePipeline:
             with open(results_dir / "eval_metrics.json", "w", encoding="utf-8") as f:
                 json.dump(summary, f, indent=2, ensure_ascii=False)
             self.logger.info(f"   - Métricas guardadas en: {results_dir / 'eval_metrics.json'}")
+
+            env_metadata = _capture_environment_metadata(
+                data_yaml_path=data_yaml_path,
+                experiment_name=experiment_name,
+                epochs=epochs or config.training_epochs,
+                started_at=started_at,
+            )
+            with open(results_dir / "environment.json", "w", encoding="utf-8") as f:
+                json.dump(env_metadata, f, indent=2, ensure_ascii=False)
+            self.logger.info(f"   - Metadata de entorno guardada en: {results_dir / 'environment.json'}")
 
             self.logger.info("📊 Generando reporte estadístico del modelo...")
             ModelReport(model_path, data_yaml_path).generate(

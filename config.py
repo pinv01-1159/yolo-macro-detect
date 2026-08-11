@@ -45,6 +45,9 @@ class Config:
         self.batch_size: int = int(self._get_env_var("BATCH_SIZE", default="16"))
         self.workers: int = int(self._get_env_var("WORKERS", default="8"))
         self.seed: int = int(self._get_env_var("SEED", default="42"))
+        self.attention_reg_lambda: float = float(
+            self._get_env_var("ATTENTION_REG_LAMBDA", default="0.0")
+        )
 
         # Configuración de inferencia
         self.confidence_threshold: float = float(

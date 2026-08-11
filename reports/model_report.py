@@ -57,6 +57,8 @@ class ModelReport:
             )
 
         self._copy_curve_plots(metrics, output_path)
+        self._copy_raw_predictions(metrics, output_path)
+        self._write_confusion_matrix_csv(metrics, model.names, output_path)
 
         report: dict[str, Any] = {
             "model_path": str(self.model_path),
@@ -172,6 +174,36 @@ class ModelReport:
             source = Path(save_dir) / filename
             if source.exists():
                 shutil.copy(source, output_path / filename)
+
+    def _copy_raw_predictions(self, metrics: Any, output_path: Path) -> None:
+        """Copia predictions.json (cajas + confianza por imagen, generado por
+        val(save_json=True)) si está disponible, para tener el dato crudo
+        detrás de las métricas agregadas."""
+        save_dir = getattr(metrics, "save_dir", None)
+        if not save_dir:
+            return
+        source = Path(save_dir) / "predictions.json"
+        if source.exists():
+            shutil.copy(source, output_path / "predictions_raw.json")
+
+    def _write_confusion_matrix_csv(
+        self, metrics: Any, names: dict[int, str], output_path: Path
+    ) -> None:
+        """Vuelca la matriz de confusión cruda (no solo el PNG) con nombres
+        de clase. Convención de Ultralytics: matrix[predicha, real]
+        (filas = clase predicha, columnas = clase real), con una fila/columna
+        extra "background" para FP/FN sin contraparte."""
+        confusion_matrix = getattr(metrics, "confusion_matrix", None)
+        matrix = getattr(confusion_matrix, "matrix", None)
+        if matrix is None:
+            return
+
+        labels = [names.get(i, str(i)) for i in range(len(names))] + ["background"]
+        with open(output_path / "confusion_matrix_raw.csv", "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(["predicha\\real", *labels])
+            for i, row in enumerate(matrix):
+                writer.writerow([labels[i], *[int(v) for v in row]])
 
     def _write_per_class_csv(self, per_class: list[dict[str, Any]], path: Path) -> None:
         with open(path, "w", newline="", encoding="utf-8") as f:

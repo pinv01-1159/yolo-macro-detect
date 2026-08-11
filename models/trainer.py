@@ -13,6 +13,7 @@ import yaml
 from ultralytics import YOLO
 
 from config import config
+from models.attention_regularization import make_attention_regularized_trainer
 from utils.logger import get_training_logger
 from utils.validators import validate_data_yaml_path, validate_directory_path
 
@@ -131,6 +132,7 @@ class YOLOTrainer:
               batch_size: int | None = None,
               workers: int | None = None,
               seed: int | None = None,
+              attention_reg_lambda: float | None = None,
               **kwargs) -> str:
         """
         Entrena el modelo YOLO.
@@ -142,6 +144,10 @@ class YOLOTrainer:
             batch_size: Tamaño del batch (usa config por defecto)
             workers: Número de workers (usa config por defecto)
             seed: Semilla de reproducibilidad (usa config por defecto)
+            attention_reg_lambda: si > 0, penaliza en la función de pérdida
+                la activación de preds["feats"] fuera de las cajas GT (ver
+                models/attention_regularization.py). Usa config por defecto
+                (ATTENTION_REG_LAMBDA, default 0.0 = desactivado).
             **kwargs: Parámetros adicionales para el entrenamiento
 
         Returns:
@@ -153,6 +159,9 @@ class YOLOTrainer:
         batch_size = batch_size or config.batch_size
         workers = workers or config.workers
         seed = seed if seed is not None else config.seed
+        attention_reg_lambda = (
+            attention_reg_lambda if attention_reg_lambda is not None else config.attention_reg_lambda
+        )
 
         self.logger.info("🚀 Iniciando entrenamiento del modelo")
         self.logger.info(f"   - Experimento: {self.experiment_name}")
@@ -222,12 +231,22 @@ class YOLOTrainer:
                 **kwargs
             }
 
+            if attention_reg_lambda > 0:
+                # Regularizacion por atencion (ver models/attention_regularization.py):
+                # penaliza directamente en la funcion de perdida la activacion fuera de
+                # las cajas GT, en vez de esperar que la augmentacion lo resuelva por su
+                # cuenta (la augmentacion copy-paste no lo logro, ver docs/leakage_analysis.md).
+                self.logger.info(
+                    f"   - Regularización por atención activada (lambda={attention_reg_lambda})"
+                )
+                train_kwargs['trainer'] = make_attention_regularized_trainer(attention_reg_lambda)
+
             # Iniciar entrenamiento
             self.logger.info("🏋️ Iniciando entrenamiento...")
             self.training_results = self.model.train(**train_kwargs)
 
-            # Obtener ruta del mejor modelo
-            best_model_path = f"runs/detect/{self.experiment_name}/weights/best.pt"
+            # Obtener ruta del mejor modelo.
+            best_model_path = self._best_model_path()
 
             if os.path.exists(best_model_path):
                 self.logger.info("✅ Entrenamiento completado exitosamente")
@@ -280,7 +299,14 @@ class YOLOTrainer:
                 iou=iou_threshold,
                 split=split,
                 plots=True,
-                verbose=True
+                verbose=True,
+                # save_json/save_conf: dejan predictions.json (cajas + confianza
+                # por imagen, formato COCO) en save_dir. Son datos crudos que se
+                # pierden si solo se guardan las métricas agregadas.
+                save_json=True,
+                save_conf=True,
+                project="runs/detect",
+                name=f"{self.experiment_name}_eval_{split}",
             )
             self.eval_metrics = metrics
 
@@ -295,6 +321,17 @@ class YOLOTrainer:
         except Exception as e:
             self.logger.error(f"❌ Error durante la evaluación: {e}")
             raise
+
+    def _best_model_path(self) -> str:
+        """Ruta real de best.pt. No se puede asumir
+        runs/detect/{experiment_name}/ porque Ultralytics usa exist_ok=False:
+        si ese directorio ya existía (p. ej. de un intento previo que falló a
+        mitad de camino), la corrida cae en runs/detect/{experiment_name}-2/
+        y un path hardcodeado apuntaría a pesos viejos o inexistentes."""
+        save_dir = getattr(getattr(self.model, "trainer", None), "save_dir", None)
+        if save_dir:
+            return str(Path(save_dir) / "weights" / "best.pt")
+        return f"runs/detect/{self.experiment_name}/weights/best.pt"
 
     def get_training_summary(self) -> dict[str, Any]:
         """
@@ -312,7 +349,7 @@ class YOLOTrainer:
             box = self.eval_metrics.box
             return {
                 "experiment_name": self.experiment_name,
-                "model_path": f"runs/detect/{self.experiment_name}/weights/best.pt",
+                "model_path": self._best_model_path(),
                 "evaluated_split": "test",
                 "metrics": {
                     "map50": float(box.map50),
@@ -330,7 +367,7 @@ class YOLOTrainer:
 
             return {
                 "experiment_name": self.experiment_name,
-                "model_path": f"runs/detect/{self.experiment_name}/weights/best.pt",
+                "model_path": self._best_model_path(),
                 "evaluated_split": "val (entrenamiento, sin evaluate() explícito)",
                 "metrics": {
                     "map50": metrics.get("metrics/mAP50(B)", 0),
