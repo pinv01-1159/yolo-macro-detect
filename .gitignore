@@ -137,6 +137,10 @@ runs/
 *.pt
 *.pth
 
+# Excepcion: los mejores checkpoints por arquitectura se versionan via git-lfs
+# (ver checkpoints/README.md) para no tener que reentrenar desde cero.
+!checkpoints/*.pt
+
 # Dataset files
 datasets/
 *.jpg
