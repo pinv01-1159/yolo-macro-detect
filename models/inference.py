@@ -70,13 +70,13 @@ class YOLOInference:
             self.model = YOLO(model_path)
             self.model_path = model_path
 
-            self.logger.info("✅ Modelo cargado exitosamente")
+            self.logger.info("Modelo cargado exitosamente")
             self.logger.info(f"   - Clases: {list(self.model.names.values())}")
 
             return self.model
 
         except Exception as e:
-            self.logger.error(f"❌ Error al cargar el modelo: {e}")
+            self.logger.error(f"Error al cargar el modelo: {e}")
             raise
 
     def predict_image(self,
@@ -102,11 +102,14 @@ class YOLOInference:
         Returns:
             Diccionario con resultados de la predicción
         """
-        conf_threshold = conf_threshold or config.confidence_threshold
-        iou_threshold = iou_threshold or config.iou_threshold
-        img_size = img_size or config.img_size
+        # `or` trataria 0.0 como "no especificado"; conf=0.0 es un valor legitimo
+        conf_threshold = (
+            conf_threshold if conf_threshold is not None else config.confidence_threshold
+        )
+        iou_threshold = iou_threshold if iou_threshold is not None else config.iou_threshold
+        img_size = img_size if img_size is not None else config.img_size
 
-        self.logger.info(f"🔍 Realizando predicción en: {image_path}")
+        self.logger.info(f"Realizando predicción en: {image_path}")
         self.logger.info(f"   - Umbral confianza: {conf_threshold}")
         self.logger.info(f"   - Umbral IoU: {iou_threshold}")
         self.logger.info(f"   - Tamaño imagen: {img_size}")
@@ -141,10 +144,23 @@ class YOLOInference:
 
             if calculate_bmwp and result_data['detecciones']:
                 bmwp_result = self.calculate_bmwp(result_data['detecciones'])
-                result_data.update(bmwp_calculator.format_result_for_json(bmwp_result))
+                parcial = bmwp_calculator.format_result_for_json(bmwp_result)
+                # El BMWP se define por SITIO de muestreo, no por fotografia:
+                # una foto contiene tipicamente un solo taxon y el indice de un
+                # solo taxon no describe la calidad del agua. Se marca como
+                # parcial para que nadie lo lea como un veredicto de sitio; el
+                # indice real lo produce predict_batch() agregando el sitio.
+                parcial["parcial"] = True
+                parcial["alcance"] = "imagen"
+                parcial["advertencias"] = [
+                    "Aporte de una sola fotografia; no es el indice del sitio. "
+                    "Usar predict_batch() sobre todas las fotos del sitio.",
+                    *parcial.get("advertencias", []),
+                ]
+                result_data.update(parcial)
                 self.logger.info(
-                    f"🌊 BMWP calculado: {bmwp_result.total_score} "
-                    f"({bmwp_result.water_quality_description})"
+                    f"Aporte BMWP de esta imagen: {bmwp_result.total_score} "
+                    f"(parcial, no es el indice del sitio)"
                 )
 
             if len(detections) > 0:
@@ -155,25 +171,36 @@ class YOLOInference:
                     self._save_annotated_image(annotated_frame, image_path, output_dir)
             else:
                 result_data["imagen_anotada_base64"] = self._encode_image(frame)
-                self.logger.info("⚠️ No se detectaron macroinvertebrados")
+                self.logger.info("No se detectaron macroinvertebrados")
 
                 if calculate_bmwp:
+                    # Ausencia de deteccion no es evidencia de mala calidad:
+                    # es ausencia de evidencia. Declarar "Muy critica" acá
+                    # inventaria un veredicto ambiental a partir de una foto
+                    # vacia.
                     result_data.update({
                         "bmwp_total": 0,
-                        "calidad_agua": "Muy crítica (Clase V)",
-                        "clase_calidad": "V",
-                        "descripcion_calidad": "Muy crítica",
-                        "confianza": 0.0,
-                        "detalles_familias": []
+                        "aspt": 0.0,
+                        "n_familias_puntuadas": 0,
+                        "clase_calidad": "N/D",
+                        "descripcion_calidad": "No determinable (sin detecciones)",
+                        "familias": [],
+                        "confianza_promedio": 0.0,
+                        "parcial": True,
+                        "alcance": "imagen",
+                        "advertencias": [
+                            "Sin detecciones: el indice no es calculable. "
+                            "Ausencia de datos no equivale a mala calidad."
+                        ],
                     })
 
-            self.logger.info("✅ Predicción completada")
+            self.logger.info("Predicción completada")
             self.logger.info(f"   - Total detecciones: {result_data['total_detecciones']}")
 
             return result_data
 
         except Exception as e:
-            self.logger.error(f"❌ Error durante la predicción: {e}")
+            self.logger.error(f"Error durante la predicción: {e}")
             raise
 
     def calculate_bmwp(self, detections: list[dict[str, Any]]) -> BMWPResult:
@@ -186,26 +213,28 @@ class YOLOInference:
         Returns:
             Resultado del cálculo BMWP
         """
-        self.logger.info("🌊 Calculando índice BMWP...")
+        self.logger.info("Calculando índice BMWP...")
 
         try:
             # Validar detecciones no reconocidas
             unrecognized = bmwp_calculator.validate_detections(detections)
             if unrecognized:
-                self.logger.warning(f"⚠️ Familias no reconocidas para BMWP: {unrecognized}")
+                self.logger.warning(f"Familias no reconocidas para BMWP: {unrecognized}")
 
             # Calcular BMWP
             bmwp_result = bmwp_calculator.calculate_bmwp(detections)
 
-            self.logger.info("✅ BMWP calculado exitosamente")
-            self.logger.info(f"   - Puntaje total: {bmwp_result.total_score}")
-            self.logger.info(f"   - Calidad del agua: {bmwp_result.water_quality_description}")
-            self.logger.info(f"   - Confianza: {bmwp_result.confidence}")
+            self.logger.info("BMWP calculado")
+            self.logger.info(f"   - Puntaje: {bmwp_result.total_score}")
+            self.logger.info(f"   - ASPT: {bmwp_result.aspt}")
+            self.logger.info(f"   - Familias puntuadas: {bmwp_result.n_families_scored}")
+            for aviso in bmwp_result.warnings:
+                self.logger.warning(f"   {aviso}")
 
             return bmwp_result
 
         except Exception as e:
-            self.logger.error(f"❌ Error al calcular BMWP: {e}")
+            self.logger.error(f"Error al calcular BMWP: {e}")
             raise
 
     def _process_detections(self,
@@ -345,14 +374,15 @@ class YOLOInference:
             # Guardar imagen
             cv2.imwrite(str(output_file), annotated_frame)
 
-            self.logger.info(f"✅ Imagen anotada guardada: {output_file}")
+            self.logger.info(f"Imagen anotada guardada: {output_file}")
 
         except Exception as e:
-            self.logger.warning(f"⚠️ No se pudo guardar la imagen anotada: {e}")
+            self.logger.warning(f"No se pudo guardar la imagen anotada: {e}")
 
     def predict_batch(self,
                      image_paths: list[str | Path],
                      conf_threshold: float | None = None,
+                     iou_threshold: float | None = None,
                      img_size: int | None = None,
                      save_annotated: bool = True,
                      output_dir: str = "results",
@@ -363,33 +393,42 @@ class YOLOInference:
         Args:
             image_paths: Lista de rutas de imágenes
             conf_threshold: Umbral de confianza
+            iou_threshold: Umbral de IoU para NMS
             img_size: Tamaño de imagen
             save_annotated: Si guardar imágenes anotadas
             output_dir: Directorio de salida
-            calculate_bmwp: Si calcular BMWP para cada imagen
+            calculate_bmwp: Si calcular el índice BMWP del sitio
 
         Returns:
-            Lista de resultados de predicción
+            Lista de resultados por imagen. Si `calculate_bmwp`, se agrega al
+            final un registro con `alcance="sitio"` que contiene el índice
+            agregado: es el único que describe la calidad del agua.
         """
-        self.logger.info(f"🔄 Procesando lote de {len(image_paths)} imágenes")
+        self.logger.info(f"Procesando lote de {len(image_paths)} imágenes")
 
         results = []
         for i, image_path in enumerate(image_paths, 1):
             try:
                 self.logger.info(f"Procesando imagen {i}/{len(image_paths)}: {image_path}")
+                # El BMWP por imagen no se calcula acá aunque se haya pedido:
+                # el indice es por sitio y se agrega mas abajo. Calcularlo por
+                # foto solo produciria indices parciales sin significado y una
+                # advertencia por cada imagen, que con 50 fotos vuelve el log
+                # ilegible justo para quien mas lo necesita leer.
                 result = self.predict_image(
                     image_path=image_path,
                     conf_threshold=conf_threshold,
+                    iou_threshold=iou_threshold,
                     img_size=img_size,
                     save_annotated=save_annotated,
                     output_dir=output_dir,
-                    calculate_bmwp=calculate_bmwp
+                    calculate_bmwp=False,
                 )
                 result["imagen_path"] = str(image_path)
                 results.append(result)
 
             except Exception as e:
-                self.logger.error(f"❌ Error procesando {image_path}: {e}")
+                self.logger.error(f"Error procesando {image_path}: {e}")
                 results.append({
                     "imagen_path": str(image_path),
                     "error": str(e),
@@ -397,7 +436,28 @@ class YOLOInference:
                     "total_detecciones": 0
                 })
 
-        self.logger.info("✅ Procesamiento de lote completado")
+        if calculate_bmwp:
+            # El BMWP se define por sitio de muestreo. Recién acá, con todas
+            # las fotos del sitio reunidas, el índice significa algo.
+            site_detections = bmwp_calculator.aggregate_images(
+                [r.get("detecciones", []) for r in results if not r.get("error")]
+            )
+            site_result = bmwp_calculator.calculate_site(site_detections)
+            site_record = bmwp_calculator.format_result_for_json(site_result)
+            site_record["alcance"] = "sitio"
+            site_record["parcial"] = False
+            site_record["n_imagenes"] = len(results)
+            results.append(site_record)
+
+            self.logger.info(
+                f"BMWP del sitio: {site_result.total_score} "
+                f"(ASPT {site_result.aspt}, {site_result.n_families_scored} familias) "
+                f"— {site_result.water_quality_description}"
+            )
+            for aviso in site_result.warnings:
+                self.logger.warning(f"   {aviso}")
+
+        self.logger.info("Procesamiento de lote completado")
         return results
 
     def export_results(self,
@@ -419,8 +479,8 @@ class YOLOInference:
             with open(output_file, 'w', encoding='utf-8') as f:
                 json.dump(results, f, indent=2, ensure_ascii=False)
 
-            self.logger.info(f"✅ Resultados exportados a: {output_file}")
+            self.logger.info(f"Resultados exportados a: {output_file}")
 
         except Exception as e:
-            self.logger.error(f"❌ Error al exportar resultados: {e}")
+            self.logger.error(f"Error al exportar resultados: {e}")
             raise

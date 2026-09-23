@@ -53,7 +53,9 @@ def read_yolo_labels(label_path: Path) -> list[tuple[int, float, float, float, f
     return boxes
 
 
-def norm_to_pixels(box: tuple[float, float, float, float], img_w: int, img_h: int) -> tuple[int, int, int, int]:
+def norm_to_pixels(
+    box: tuple[float, float, float, float], img_w: int, img_h: int
+) -> tuple[int, int, int, int]:
     cx, cy, w, h = box
     x1 = max(0, int((cx - w / 2) * img_w))
     y1 = max(0, int((cy - h / 2) * img_h))
@@ -153,11 +155,11 @@ def main() -> None:
             for variant in range(args.multiplier):
                 # elegir donante de OTRO grupo (sesion/rafaga distinta), sin repetir
                 # donante entre variantes de la misma instancia
-                donor_path = donor_group = None
+                donor_path = None
                 for _ in range(20):
                     cand_path, cand_group = rng.choice(donor_pool)
                     if cand_group != source_group and cand_path not in used_donors:
-                        donor_path, donor_group = cand_path, cand_group
+                        donor_path = cand_path
                         break
                 if donor_path is None:
                     continue  # no se encontro donante valido, saltar esta variante
@@ -172,7 +174,8 @@ def main() -> None:
 
                 donor_boxes = read_yolo_labels(train_labels_dir / f"{donor_path.stem}.txt")
                 synthetic = erase_boxes(donor_img, donor_boxes)
-                synthetic[y1:y2, x1:x2] = crop  # mismas coords relativas: mismo box normalizado sirve tal cual
+                # mismas coords relativas: el box normalizado sirve tal cual
+                synthetic[y1:y2, x1:x2] = crop
 
                 out_name = f"cpaug_{img_path.stem}_{inst_idx}_v{variant}"
                 cv2.imwrite(str(out_images_dir / f"{out_name}.jpg"), synthetic)
@@ -195,7 +198,8 @@ def main() -> None:
         )
     )
 
-    print(f"\n{n_generated} imágenes sintéticas generadas ({skipped_degenerate} cajas degeneradas saltadas)")
+    print(f"\n{n_generated} imágenes sintéticas generadas "
+          f"({skipped_degenerate} cajas degeneradas saltadas)")
     print("por clase:")
     for n in names:
         print(f"  {n}: +{per_class_generated[n]}")

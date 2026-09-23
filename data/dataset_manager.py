@@ -61,7 +61,7 @@ class DatasetManager:
                 "explícitamente a setup_roboflow_connection(api_key=...)."
             )
 
-        self.logger.info("🔗 Configurando conexión con Roboflow")
+        self.logger.info("Configurando conexión con Roboflow")
         self.logger.info(f"   - Workspace: {workspace}")
         self.logger.info(f"   - Project: {project_name}")
 
@@ -73,10 +73,10 @@ class DatasetManager:
             workspace_obj = self.rf.workspace(workspace)
             self.project = workspace_obj.project(project_name)
 
-            self.logger.info("✅ Conexión con Roboflow establecida")
+            self.logger.info("Conexión con Roboflow establecida")
 
         except Exception as e:
-            self.logger.error(f"❌ Error al conectar con Roboflow: {e}")
+            self.logger.error(f"Error al conectar con Roboflow: {e}")
             raise
 
     def get_available_versions(self) -> dict[str, Any]:
@@ -91,7 +91,7 @@ class DatasetManager:
                 "Conexión con Roboflow no establecida. Use setup_roboflow_connection() primero."
             )
 
-        self.logger.info("🔍 Obteniendo versiones disponibles del dataset...")
+        self.logger.info("Obteniendo versiones disponibles del dataset...")
 
         try:
             versions_info = self.project.versions()
@@ -117,7 +117,7 @@ class DatasetManager:
             }
 
         except Exception as e:
-            self.logger.error(f"❌ Error al obtener versiones: {e}")
+            self.logger.error(f"Error al obtener versiones: {e}")
             raise
 
     def download_dataset(self,
@@ -140,7 +140,7 @@ class DatasetManager:
                 "Conexión con Roboflow no establecida. Use setup_roboflow_connection() primero."
             )
 
-        self.logger.info("📦 Descargando dataset desde Roboflow")
+        self.logger.info("Descargando dataset desde Roboflow")
         self.logger.info(f"   - Formato: {format_type}")
         self.logger.info(f"   - Directorio: {output_dir}")
 
@@ -163,7 +163,7 @@ class DatasetManager:
                 )
 
             # Descargar dataset
-            self.logger.info(f"📥 Descargando versión {version}...")
+            self.logger.info(f"Descargando versión {version}...")
             dataset = self.project.version(version).download(format_type)
 
             # Mover a directorio de salida si es necesario
@@ -179,7 +179,7 @@ class DatasetManager:
 
                 dataset.location = str(output_path)
 
-            self.logger.info("✅ Dataset descargado exitosamente")
+            self.logger.info("Dataset descargado exitosamente")
             self.logger.info(f"   - Ubicación: {dataset.location}")
 
             # Obtener información del dataset
@@ -193,7 +193,7 @@ class DatasetManager:
             }
 
         except Exception as e:
-            self.logger.error(f"❌ Error al descargar dataset: {e}")
+            self.logger.error(f"Error al descargar dataset: {e}")
             raise
 
     def _get_dataset_info(self, dataset_path: str) -> dict[str, Any]:
@@ -351,7 +351,7 @@ class DatasetManager:
         Returns:
             True si la estructura es válida
         """
-        self.logger.info(f"🔍 Validando estructura del dataset: {dataset_path}")
+        self.logger.info(f"Validando estructura del dataset: {dataset_path}")
 
         try:
             path = Path(dataset_path)
@@ -404,14 +404,14 @@ class DatasetManager:
 
                 self.logger.info(f"   - {split_key}: {len(images)} imágenes")
 
-            self.logger.info("✅ Estructura del dataset válida")
+            self.logger.info("Estructura del dataset válida")
             self.logger.info(f"   - Clases: {data.get('nc', 'N/A')}")
             self.logger.info(f"   - Nombres: {data.get('names', [])}")
 
             return True
 
         except Exception as e:
-            self.logger.error(f"❌ Error en la estructura del dataset: {e}")
+            self.logger.error(f"Error en la estructura del dataset: {e}")
             raise
 
     def get_dataset_summary(self, dataset_path: str) -> dict[str, Any]:
@@ -492,7 +492,7 @@ class DatasetManager:
             with open(data_yaml_path, 'w', encoding='utf-8') as f:
                 yaml.dump(data_yaml_content, f, default_flow_style=False, allow_unicode=True)
 
-            self.logger.info(f"✅ data.yaml generado: {data_yaml_path}")
+            self.logger.info(f"data.yaml generado: {data_yaml_path}")
             self.logger.info(f"   - Clases: {len(summary['classes'])}")
             self.logger.info(f"   - Imágenes totales: {summary['total_images']}")
 

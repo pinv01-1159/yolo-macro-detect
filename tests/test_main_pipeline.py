@@ -1,4 +1,7 @@
 import json
+from pathlib import Path
+
+import pytest
 
 from main import MacroinvertebratePipeline
 
@@ -33,7 +36,7 @@ def test_train_model_persists_eval_metrics_json(tmp_path, monkeypatch):
         def __init__(self, model_path, data_yaml_path):
             pass
 
-        def generate(self, metrics=None, output_dir=None):
+        def generate(self, metrics=None, output_dir=None, protocol=None):
             return {}
 
     monkeypatch.setattr("main.ModelReport", FakeModelReport)
@@ -60,7 +63,7 @@ def test_train_model_generates_model_report_reusing_eval_metrics(tmp_path, monke
             generated["model_path"] = model_path
             generated["data_yaml_path"] = data_yaml_path
 
-        def generate(self, metrics=None, output_dir=None):
+        def generate(self, metrics=None, output_dir=None, protocol=None):
             generated["metrics"] = metrics
             generated["output_dir"] = output_dir
             return {}
@@ -126,3 +129,63 @@ def test_cli_dataset_report_flag_invokes_report(tmp_path, monkeypatch):
     main.main()
 
     assert calls == {"data_yaml_path": "fake.yaml", "generated": True}
+
+
+def test_predict_site_agrega_el_indice_del_sitio(tmp_path, monkeypatch):
+    """El BMWP se define por sitio de muestreo, no por fotografía.
+
+    Es el camino que usan los biólogos: hasta ahora `predict_batch` existía
+    pero no tenía ningún llamador ni flag de CLI, así que el caso de uso real
+    del proyecto no era alcanzable sin escribir Python.
+    """
+    from PIL import Image
+
+    monkeypatch.chdir(tmp_path)
+    sitio = tmp_path / "arroyo"
+    sitio.mkdir()
+    for n in range(3):
+        Image.new("RGB", (64, 64)).save(sitio / f"foto{n}.jpg")
+    (tmp_path / "modelo.pt").write_bytes(b"fake")
+
+    class FakeInference:
+        def __init__(self, model_path):
+            self.model_path = model_path
+            self.recibidas = None
+
+        def predict_batch(self, image_paths, **kwargs):
+            self.recibidas = image_paths
+            assert kwargs["calculate_bmwp"] is True
+            return [{"detecciones": []} for _ in image_paths] + [
+                {"alcance": "sitio", "bmwp_total": 17, "aspt": 2.83,
+                 "n_familias_puntuadas": 6, "calidad_agua": "Crítica (Clase IV)",
+                 "familias": [], "advertencias": [], "n_imagenes": len(image_paths)}
+            ]
+
+        def export_results(self, resultados, output_file):
+            Path(output_file).parent.mkdir(parents=True, exist_ok=True)
+            Path(output_file).write_text("{}")
+
+    monkeypatch.setattr("main.YOLOInference", FakeInference)
+    pipeline = MacroinvertebratePipeline()
+
+    resultado = pipeline.predict_site(
+        images_dir=str(sitio), model_path=str(tmp_path / "modelo.pt"),
+        save_annotated=False, output_dir=str(tmp_path / "out"),
+    )
+
+    assert resultado["alcance"] == "sitio"
+    assert resultado["n_imagenes"] == 3
+    assert resultado["bmwp_total"] == 17
+
+
+def test_predict_site_falla_claro_sin_imagenes(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    vacia = tmp_path / "vacia"
+    vacia.mkdir()
+    pipeline = MacroinvertebratePipeline()
+
+    with pytest.raises(FileNotFoundError, match="No hay imágenes"):
+        pipeline.predict_site(images_dir=str(vacia), model_path="x.pt")
+
+    with pytest.raises(NotADirectoryError, match="No es una carpeta"):
+        pipeline.predict_site(images_dir=str(tmp_path / "nope"), model_path="x.pt")

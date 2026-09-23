@@ -38,6 +38,16 @@ CLASS_NAMES = [
     "Physidae", "Planorbidae", "Psychodidae",
 ]
 CROP_PADDING = 0.15  # 15% del tamano de la caja, de margen a cada lado
+
+# El diseno del experimento asume que la caja es chica respecto de la imagen.
+# En este dataset no lo es: la caja mediana ocupa el 52.6% del cuadro y el 11.9%
+# de las instancias supera el 90%. Para esas, "solo fondo" borra casi toda la
+# imagen y "solo bicho" con 15% de margen devuelve practicamente la foto
+# original, con fondo incluido. El resultado no mide dependencia del fondo sino
+# cuanto fondo quedo sin tapar, y el gradiente entre familias que se observa
+# refleja el tamano de sus cajas antes que su dependencia del contexto
+# (auditoria S4). Por eso se reporta ademas el subconjunto interpretable.
+MAX_AREA_FRAC = 0.40
 CONF_THRESHOLD = 0.3  # mismo umbral que el eval oficial del pipeline
 
 
@@ -66,6 +76,10 @@ def load_instances(data_dir: Path) -> list[dict]:
                 "box": (x1, y1, x2, y2),
                 "img_w": w,
                 "img_h": h,
+                # fraccion del cuadro que ocupa la caja: determina si el
+                # experimento es interpretable para esta instancia (ver
+                # MAX_AREA_FRAC)
+                "area_frac": ((x2 - x1) * (y2 - y1)) / float(w * h),
             })
     return instances
 
@@ -84,7 +98,8 @@ def crop_only(img, box, img_w, img_h):
 def background_only(img, box):
     x1, y1, x2, y2 = box
     masked = img.copy()
-    masked[int(y1):int(y2), int(x1):int(x2)] = 114  # gris neutro, mismo valor de padding que usa Ultralytics en letterbox
+    # 114 = gris neutro, el mismo valor de padding que usa Ultralytics en letterbox
+    masked[int(y1):int(y2), int(x1):int(x2)] = 114
     return masked
 
 
@@ -94,6 +109,23 @@ def box_center_dist(pred_box, gt_box):
     gx = (gt_box[0] + gt_box[2]) / 2
     gy = (gt_box[1] + gt_box[3]) / 2
     return ((px - gx) ** 2 + (py - gy) ** 2) ** 0.5
+
+
+def _summarize(counts: dict, n: int) -> dict:
+    if not n:
+        return {"n_instances": 0}
+    return {
+        "n_instances": n,
+        "crop_only": {
+            "accuracy": counts["crop_correct"] / n,
+            "no_detection_rate": counts["crop_nodet"] / n,
+            "wrong_class_rate": counts["crop_wrong"] / n,
+        },
+        "background_only": {
+            "shortcut_rate": counts["bg_true"] / n,
+            "any_detection_rate": counts["bg_any"] / n,
+        },
+    }
 
 
 def run_experiment(model: YOLO, instances: list[dict], device: str) -> dict:
@@ -106,7 +138,17 @@ def run_experiment(model: YOLO, instances: list[dict], device: str) -> dict:
     per_class_crop = {c: {"correct": 0, "total": 0} for c in CLASS_NAMES}
     per_class_bg = {c: {"shortcut_hits": 0, "total": 0} for c in CLASS_NAMES}
 
+    # mismos conteos, restringidos a cajas chicas: es el unico subconjunto
+    # donde tapar la caja deja fondo suficiente para que la pregunta tenga
+    # sentido (ver MAX_AREA_FRAC)
+    small = dict.fromkeys(
+        ("crop_correct", "crop_nodet", "crop_wrong", "bg_true", "bg_any"), 0
+    )
+    n_small = 0
+
     for inst in instances:
+        es_chica = inst["area_frac"] < MAX_AREA_FRAC
+        n_small += es_chica
         img = cv2.imread(str(inst["image_path"]))
         box = inst["box"]
         true_name = CLASS_NAMES[inst["class_id"]]
@@ -116,18 +158,22 @@ def run_experiment(model: YOLO, instances: list[dict], device: str) -> dict:
         per_class_crop[true_name]["total"] += 1
         if crop.size == 0:
             crop_nodet += 1
+            small["crop_nodet"] += es_chica
         else:
             res = model.predict(crop, verbose=False, conf=CONF_THRESHOLD, device=device)[0]
             if len(res.boxes) == 0:
                 crop_nodet += 1
+                small["crop_nodet"] += es_chica
             else:
                 best = res.boxes[res.boxes.conf.argmax()]
                 pred_name = CLASS_NAMES[int(best.cls[0])]
                 if pred_name == true_name:
                     crop_correct += 1
                     per_class_crop[true_name]["correct"] += 1
+                    small["crop_correct"] += es_chica
                 else:
                     crop_wrong += 1
+                    small["crop_wrong"] += es_chica
 
         # B) solo fondo (bicho tapado)
         masked = background_only(img, box)
@@ -139,10 +185,12 @@ def run_experiment(model: YOLO, instances: list[dict], device: str) -> dict:
                 pb = b.xyxy[0].tolist()
                 if box_center_dist(pb, box) < max(box[2] - box[0], box[3] - box[1]):
                     bg_any_detection_at_box += 1
+                    small["bg_any"] += es_chica
                     pred_name = CLASS_NAMES[int(b.cls[0])]
                     if pred_name == true_name:
                         bg_predicts_true_class += 1
                         per_class_bg[true_name]["shortcut_hits"] += 1
+                        small["bg_true"] += es_chica
                     break
 
     n = len(instances)
@@ -155,14 +203,30 @@ def run_experiment(model: YOLO, instances: list[dict], device: str) -> dict:
         },
         "background_only": {
             "shortcut_rate": bg_predicts_true_class / n,  # clase correcta pese a no haber bicho
-            "any_detection_rate": bg_any_detection_at_box / n,  # el modelo alucina algo ahi, sea la clase que sea
+            # el modelo alucina algo ahi, sea la clase que sea
+            "any_detection_rate": bg_any_detection_at_box / n,
         },
         "per_class_crop_accuracy": {
-            c: (v["correct"] / v["total"] if v["total"] else None) for c, v in per_class_crop.items()
+            c: (v["correct"] / v["total"] if v["total"] else None)
+            for c, v in per_class_crop.items()
         },
         "per_class_background_shortcut_rate": {
-            c: (v["shortcut_hits"] / v["total"] if v["total"] else None) for c, v in per_class_bg.items()
+            c: (v["shortcut_hits"] / v["total"] if v["total"] else None)
+            for c, v in per_class_bg.items()
         },
+        # Resultado interpretable: sobre el resto de las instancias el
+        # experimento mide el tamano de la caja, no la dependencia del fondo.
+        "restringido_cajas_chicas": {
+            "max_area_frac": MAX_AREA_FRAC,
+            **_summarize(small, n_small),
+            "cobertura": n_small / n if n else 0.0,
+        },
+        "advertencia": (
+            f"Las cifras globales incluyen instancias cuya caja ocupa casi todo "
+            f"el cuadro, donde 'solo fondo' borra la imagen y 'solo bicho' la "
+            f"devuelve entera. Usar 'restringido_cajas_chicas' "
+            f"(area_frac < {MAX_AREA_FRAC}) para conclusiones."
+        ),
     }
 
 

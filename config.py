@@ -13,7 +13,9 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv(Path.cwd() / ".env")
+# El .env vive junto al codigo, no en el directorio desde el que se invoca:
+# con Path.cwd() la configuracion cambiaba en silencio segun donde se corriera.
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 
 class Config:
@@ -27,47 +29,69 @@ class Config:
 
     def __init__(self):
         """Inicializa la configuración con valores por defecto."""
+        # Problemas detectados al leer el entorno; se muestran en __str__ en
+        # vez de reventar, para que el usuario vea que valor quedo efectivo.
+        self._config_warnings: list[str] = []
         # Configuración de Roboflow (opcional a este nivel: solo se exige
         # cuando algo la usa de verdad, ver DatasetManager.setup_roboflow_connection)
         self.roboflow_api_key: str = self._get_env_var("ROBOFLOW_API_KEY", default="")
         self.roboflow_workspace: str = self._get_env_var(
             "ROBOFLOW_WORKSPACE", default="pinv011159"
         )
+        # El proyecto por defecto es el del split corregido. El original
+        # (macroinvertebrados-acuaticos) reparte las rafagas del mismo
+        # especimen entre train y test; ver docs/leakage_analysis.md.
         self.roboflow_project: str = self._get_env_var(
-            "ROBOFLOW_PROJECT", default="macroinvertebrados-acuaticos"
+            "ROBOFLOW_PROJECT", default="macroinvertebrados-split-limpio-kuhq3"
         )
 
         # Configuración del modelo
-        self.model_name: str = self._get_env_var("MODEL_NAME", default="yolov8x.pt")
+        self.model_name: str = self._get_env_var("MODEL_NAME", default="yolo11s.pt")
         self.experiment_name: str = self._get_env_var("EXPERIMENT_NAME", default="macros")
-        self.training_epochs: int = int(self._get_env_var("TRAINING_EPOCHS", default="50"))
-        self.img_size: int = int(self._get_env_var("IMG_SIZE", default="640"))
-        self.batch_size: int = int(self._get_env_var("BATCH_SIZE", default="16"))
-        self.workers: int = int(self._get_env_var("WORKERS", default="8"))
-        self.seed: int = int(self._get_env_var("SEED", default="42"))
-        self.attention_reg_lambda: float = float(
-            self._get_env_var("ATTENTION_REG_LAMBDA", default="0.0")
-        )
+        self.training_epochs: int = self._get_int("TRAINING_EPOCHS", 200)
+        self.img_size: int = self._get_int("IMG_SIZE", 640)
+        self.batch_size: int = self._get_int("BATCH_SIZE", 16)
+        self.workers: int = self._get_int("WORKERS", 8)
+        self.seed: int = self._get_int("SEED", 42)
+        self.attention_reg_lambda: float = self._get_float("ATTENTION_REG_LAMBDA", 0.0)
 
         # Configuración de inferencia
-        self.confidence_threshold: float = float(
-            self._get_env_var("CONFIDENCE_THRESHOLD", default="0.3")
-        )
-        self.iou_threshold: float = float(self._get_env_var("IOU_THRESHOLD", default="0.6"))
+        self.confidence_threshold: float = self._get_float("CONFIDENCE_THRESHOLD", 0.3)
+        self.iou_threshold: float = self._get_float("IOU_THRESHOLD", 0.6)
 
         # Configuración de logging
         self.log_level: str = self._get_env_var("LOG_LEVEL", default="INFO")
-        self.save_results: bool = (
-            self._get_env_var("SAVE_RESULTS", default="True").lower() == "true"
-        )
-
         # Configuración BMWP
         self.enable_bmwp: bool = (
             self._get_env_var("ENABLE_BMWP", default="True").lower() == "true"
         )
-        self.bmwp_confidence_weight: bool = (
-            self._get_env_var("BMWP_CONFIDENCE_WEIGHT", default="True").lower() == "true"
-        )
+
+    def _get_int(self, name: str, default: int) -> int:
+        """Entero de entorno, tolerante a valores vacios o mal formados.
+
+        `int(os.getenv(...))` reventaba en el constructor con `IMG_SIZE=`,
+        antes de que `validate()` llegara a correr: el programa moria con un
+        ValueError crudo en vez de avisar que la configuracion estaba mal.
+        """
+        crudo = self._get_env_var(name, default=str(default)).strip()
+        try:
+            return int(crudo)
+        except ValueError:
+            self._config_warnings.append(
+                f"{name}={crudo!r} no es un entero; se usa {default}."
+            )
+            return default
+
+    def _get_float(self, name: str, default: float) -> float:
+        """Flotante de entorno, con la misma tolerancia que `_get_int`."""
+        crudo = self._get_env_var(name, default=str(default)).strip()
+        try:
+            return float(crudo)
+        except ValueError:
+            self._config_warnings.append(
+                f"{name}={crudo!r} no es un numero; se usa {default}."
+            )
+            return default
 
     def _get_env_var(self, name: str, default: str | None = None) -> str:
         """
@@ -103,7 +127,10 @@ class Config:
             if self.training_epochs <= 0:
                 return False
 
-            if self.img_size <= 0:
+            # YOLO exige que el lado sea multiplo del stride maximo (32); con
+            # 641 el modelo reescala en silencio y la resolucion efectiva deja
+            # de ser la declarada.
+            if self.img_size <= 0 or self.img_size % 32 != 0:
                 return False
 
             if self.batch_size <= 0:
@@ -116,6 +143,27 @@ class Config:
 
         except Exception:
             return False
+
+    def validation_errors(self) -> list[str]:
+        """Motivos concretos por los que `validate()` fallaria, mas los avisos
+        acumulados al leer el entorno. Existe para que el usuario no reciba
+        solo un booleano cuando la configuracion esta mal."""
+        errores = list(self._config_warnings)
+        if not (0.0 <= self.confidence_threshold <= 1.0):
+            errores.append(f"CONFIDENCE_THRESHOLD={self.confidence_threshold} fuera de [0,1].")
+        if not (0.0 <= self.iou_threshold <= 1.0):
+            errores.append(f"IOU_THRESHOLD={self.iou_threshold} fuera de [0,1].")
+        if self.training_epochs <= 0:
+            errores.append(f"TRAINING_EPOCHS={self.training_epochs} debe ser > 0.")
+        if self.img_size <= 0:
+            errores.append(f"IMG_SIZE={self.img_size} debe ser > 0.")
+        elif self.img_size % 32 != 0:
+            errores.append(f"IMG_SIZE={self.img_size} debe ser multiplo de 32 (YOLO).")
+        if self.batch_size <= 0:
+            errores.append(f"BATCH_SIZE={self.batch_size} debe ser > 0.")
+        if self.workers <= 0:
+            errores.append(f"WORKERS={self.workers} debe ser > 0.")
+        return errores
 
     def get_roboflow_config(self) -> dict:
         """
@@ -159,7 +207,6 @@ class Config:
             "iou_threshold": self.iou_threshold,
             "img_size": self.img_size,
             "enable_bmwp": self.enable_bmwp,
-            "bmwp_confidence_weight": self.bmwp_confidence_weight
         }
 
     def get_bmwp_config(self) -> dict:
@@ -169,10 +216,7 @@ class Config:
         Returns:
             Diccionario con configuración BMWP
         """
-        return {
-            "enable_bmwp": self.enable_bmwp,
-            "bmwp_confidence_weight": self.bmwp_confidence_weight
-        }
+        return {"enable_bmwp": self.enable_bmwp}
 
     def __str__(self) -> str:
         """
@@ -205,11 +249,9 @@ Inferencia:
 
 BMWP:
   - Habilitado: {self.enable_bmwp}
-  - Ponderación confianza: {self.bmwp_confidence_weight}
 
 Logging:
   - Nivel: {self.log_level}
-  - Guardar resultados: {self.save_results}
 
 Validación: {'✓' if self.validate() else '✗'}
         """.strip()

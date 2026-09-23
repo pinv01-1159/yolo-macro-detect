@@ -1,0 +1,110 @@
+{
+  "dataset": {
+    "roboflow_project": "pinv011159/macroinvertebrados-split-limpio-kuhq3",
+    "version": 1,
+    "source_project": "pinv011159/macroinvertebrados-acuaticos",
+    "source_version": 9,
+    "classes": 19,
+    "source_images": 2403,
+    "split_method": "group-aware por espécimen (union-find: gap temporal <=60s o coseno >0.95), estratificado por clase, seed 42",
+    "splits_source_images": {
+      "train": 1660,
+      "valid": 373,
+      "test": 370
+    },
+    "splits_after_augmentation": {
+      "train": 4980,
+      "valid": 373,
+      "test": 370
+    },
+    "preprocessing": {
+      "auto-orient": true,
+      "resize": "640x640 stretch"
+    },
+    "augmentation": {
+      "versions": 3,
+      "flip": "horizontal + vertical",
+      "rotate": "+/-20 grados",
+      "brightness": "+/-25%",
+      "exposure": "+/-15%",
+      "saturation": "+/-25%",
+      "note": "solo se aplica al split de train"
+    },
+    "leakage_before": {
+      "images_in_cross_split_bursts": "2099/2403 (87.3%)",
+      "valid_with_train_twin_cos_gt_0.99": 0.292,
+      "test_with_train_twin_cos_gt_0.99": 0.256
+    },
+    "leakage_after": {
+      "valid_cos_gt_0.95": 0.0,
+      "test_cos_gt_0.95": 0.0
+    }
+  },
+  "trainings_cloud": [
+    {
+      "model_type": "rfdetr-medium",
+      "training_id": "e8ba386ef50a35fb8e00",
+      "label": "RF-DETR Medium"
+    },
+    {
+      "model_type": "yolov8s",
+      "training_id": "c2562dfb245f6c8a1773",
+      "label": "Roboflow 3.0 Accurate (YOLOv8s)"
+    },
+    {
+      "model_type": "yolo26s",
+      "training_id": "de1f0d019b9bf4650e9c",
+      "label": "YOLO26 Small"
+    },
+    {
+      "model_type": "yolov11s",
+      "training_id": "f3e0318c135246b8f44a",
+      "label": "YOLOv11 Small"
+    },
+    {
+      "model_type": "yololite-edge-s",
+      "training_id": "b9509d43549841185c66",
+      "label": "YOLOLite CPU Small"
+    },
+    {
+      "model_type": "yololite-s",
+      "training_id": "2ecb60cbaf04ded6d62b",
+      "label": "YOLOLite GPU Small"
+    }
+  ],
+  "trainings_local": {
+    "hardware": "RTX 4050 Laptop 6GB",
+    "framework": "ultralytics 8.4.95",
+    "dataset": "datasets/clean (reproducible con tools/build_clean_split.py, seed 42)",
+    "status": "completado",
+    "checkpoints": "checkpoints/*_clean_best.pt (git-lfs) + *_clean_environment.json",
+    "evaluacion": "reports/paper/eval_overall.csv (protocolo coco: conf=0.001, iou=0.7)",
+    "modelos": [
+      {
+        "model": "yolo11s",
+        "epochs_corridas": 156,
+        "batch_size": 16,
+        "seed": 42,
+        "map50": 0.9914,
+        "map50_95": 0.8655
+      },
+      {
+        "model": "yolo12s",
+        "epochs_corridas": 188,
+        "batch_size": 8,
+        "seed": 42,
+        "map50": 0.995,
+        "map50_95": 0.8789
+      },
+      {
+        "model": "yolo26s",
+        "epochs_corridas": 200,
+        "batch_size": 16,
+        "seed": 42,
+        "map50": 0.9947,
+        "map50_95": 0.8807
+      }
+    ],
+    "nota_batch": "yolo12s uso batch=8 porque el primer intento con 16 murio por OOM en la GPU de 6GB; es una restriccion de hardware, no una variable controlada, y rompe la comparabilidad estricta entre arquitecturas."
+  }
+}

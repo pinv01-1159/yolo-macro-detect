@@ -1,0 +1,171 @@
+{
+  "checkpoint": "checkpoints/yolo26s_clean_best.pt",
+  "split": "test",
+  "n_images": 370,
+  "n_groups": 87,
+  "n_instances": 458,
+  "control_vs_ultralytics_val": {
+    "map50_ultralytics": 0.9947,
+    "map50_manual": 0.9113,
+    "map50_95_ultralytics": 0.8804,
+    "map50_95_manual": 0.7324,
+    "max_abs_delta": 0.148,
+    "reproduces": false
+  },
+  "map_protocol": {
+    "conf_floor": 0.001,
+    "nms_iou": 0.7,
+    "iou_thresholds": "0.50:0.05:0.95"
+  },
+  "operating_point": {
+    "tau": 0.25,
+    "selected_on": "valid",
+    "nms_iou": 0.6,
+    "matching_iou": 0.5,
+    "baseline_tau": 0.3,
+    "f1_valid_tau_star": 0.9849,
+    "f1_valid_baseline": 0.9838,
+    "paired_diff_mean": 0.0012,
+    "paired_diff_ci95": [
+      -0.0038,
+      0.008
+    ],
+    "ci_contains_zero": true,
+    "argmax_stability": {
+      "0.20": 0.199,
+      "0.25": 0.52,
+      "0.30": 0.274,
+      "0.35": 0.004,
+      "0.40": 0.002,
+      "0.50": 0.001
+    }
+  },
+  "bootstrap": {
+    "resamples": 1000,
+    "seed": 42,
+    "unit": "group_id (especimen)"
+  },
+  "metrics": {
+    "map50": {
+      "point_estimate": 0.9113,
+      "ci95_grouped": [
+        0.8633,
+        0.9364
+      ],
+      "ci95_grouped_width": 0.0731,
+      "ci95_per_image": [
+        0.8874,
+        0.9371
+      ],
+      "ci95_per_image_width": 0.0497,
+      "underestimation_factor": 1.47,
+      "boot_std_grouped": 0.0182
+    },
+    "map50_95": {
+      "point_estimate": 0.7324,
+      "ci95_grouped": [
+        0.6888,
+        0.7602
+      ],
+      "ci95_grouped_width": 0.0714,
+      "ci95_per_image": [
+        0.716,
+        0.7604
+      ],
+      "ci95_per_image_width": 0.0444,
+      "underestimation_factor": 1.61,
+      "boot_std_grouped": 0.0175
+    },
+    "precision_micro": {
+      "point_estimate": 0.9762,
+      "ci95_grouped": [
+        0.9581,
+        0.9904
+      ],
+      "ci95_grouped_width": 0.0323,
+      "ci95_per_image": [
+        0.9602,
+        0.9892
+      ],
+      "ci95_per_image_width": 0.029,
+      "underestimation_factor": 1.11,
+      "boot_std_grouped": 0.0085
+    },
+    "recall_micro": {
+      "point_estimate": 0.9847,
+      "ci95_grouped": [
+        0.9563,
+        1.0
+      ],
+      "ci95_grouped_width": 0.0437,
+      "ci95_per_image": [
+        0.9722,
+        0.9956
+      ],
+      "ci95_per_image_width": 0.0234,
+      "underestimation_factor": 1.87,
+      "boot_std_grouped": 0.0114
+    },
+    "f1_micro": {
+      "point_estimate": 0.9804,
+      "ci95_grouped": [
+        0.964,
+        0.9921
+      ],
+      "ci95_grouped_width": 0.0281,
+      "ci95_per_image": [
+        0.9698,
+        0.9891
+      ],
+      "ci95_per_image_width": 0.0193,
+      "underestimation_factor": 1.45,
+      "boot_std_grouped": 0.0071
+    },
+    "precision_macro": {
+      "point_estimate": 0.9774,
+      "ci95_grouped": [
+        0.9623,
+        0.9905
+      ],
+      "ci95_grouped_width": 0.0282,
+      "ci95_per_image": [
+        0.9648,
+        0.9899
+      ],
+      "ci95_per_image_width": 0.0251,
+      "underestimation_factor": 1.13,
+      "boot_std_grouped": 0.0073
+    },
+    "recall_macro": {
+      "point_estimate": 0.9847,
+      "ci95_grouped": [
+        0.9601,
+        1.0
+      ],
+      "ci95_grouped_width": 0.0399,
+      "ci95_per_image": [
+        0.9721,
+        0.9954
+      ],
+      "ci95_per_image_width": 0.0232,
+      "underestimation_factor": 1.72,
+      "boot_std_grouped": 0.0113
+    },
+    "f1_macro": {
+      "point_estimate": 0.9801,
+      "ci95_grouped": [
+        0.9577,
+        0.992
+      ],
+      "ci95_grouped_width": 0.0343,
+      "ci95_per_image": [
+        0.9691,
+        0.9892
+      ],
+      "ci95_per_image_width": 0.0201,
+      "underestimation_factor": 1.71,
+      "boot_std_grouped": 0.009
+    }
+  },
+  "median_underestimation_factor": 1.54
+}

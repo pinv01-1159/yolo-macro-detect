@@ -36,9 +36,14 @@ from ultralytics.models.yolo.detect.train import DetectionTrainer
 from ultralytics.utils.loss import E2ELoss, v8DetectionLoss
 
 
-def _parse_output(preds: Any) -> dict[str, torch.Tensor]:
+def _parse_output(preds: Any) -> dict[str, Any]:
     """Misma lógica que v8DetectionLoss.parse_output: preds puede venir como
-    tupla (raw, dict) o directamente como dict, según el modo del forward."""
+    tupla (raw, dict) o directamente como dict, según el modo del forward.
+
+    El valor es `Any` y no `torch.Tensor` porque la forma depende del modo: en
+    los modelos e2e las claves 'one2many'/'one2one' contienen otro dict, y
+    'feats' es una lista de tensores, no un tensor.
+    """
     return preds[1] if isinstance(preds, tuple) else preds
 
 
@@ -120,7 +125,10 @@ class AttentionPenaltyLoss:
             # dos cabezas (one2many/one2one) comparten el mismo backbone --
             # penalizar la union de ambas listas de feats para que la
             # regularizacion alcance a la que efectivamente se usa en inferencia
-            feats = [*parsed["one2many"]["feats"], *parsed["one2one"]["feats"]]
+            feats: list[torch.Tensor] = [
+                *parsed["one2many"]["feats"],
+                *parsed["one2one"]["feats"],
+            ]
         else:
             feats = parsed["feats"]
 

@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-import config as config_module
+import data.dataset_manager as dataset_manager_module
 from data.dataset_manager import DatasetManager
 
 
@@ -18,7 +18,12 @@ def test_dataset_manager_init_does_not_require_roboflow_key(tmp_path, monkeypatc
 
 def test_setup_roboflow_connection_raises_without_api_key(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
-    monkeypatch.setattr(config_module.config, "roboflow_api_key", "")
+    # Hay que parchear el objeto que dataset_manager tiene ligado, no el de
+    # config: el modulo hace `from config import config` al importarse, asi que
+    # el reload de conftest deja dos instancias distintas y parchear la de
+    # config no afecta a la que se usa aca. Con la instancia equivocada el test
+    # pasaba la clave real y golpeaba la API de Roboflow.
+    monkeypatch.setattr(dataset_manager_module.config, "roboflow_api_key", "")
     manager = DatasetManager()
 
     with pytest.raises(ValueError, match="ROBOFLOW_API_KEY"):

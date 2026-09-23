@@ -79,9 +79,35 @@ Implicaciones:
   distinto fondo/bandeja/iluminación, y reservar una sesión completa por
   familia como test *out-of-session*. Ese es el número que hay que reportar.
 
-## 4. Qué esperar
+## 4. Qué pasó (actualizado 2026-09-21)
 
-Con el split limpio las métricas van a **bajar mucho** respecto al 99.4 %
-publicado. Esa caída es el resultado correcto: es la primera medición
-honesta. El README actual documenta números derivados del split contaminado y
-hay que rehacerlo tras el primer entrenamiento válido.
+La predicción original de esta sección era que las métricas **bajarían mucho**
+con el split limpio. **No fue así, y el motivo es más interesante que la
+predicción.**
+
+Medido sobre `datasets/clean/test` (87 especímenes independientes, protocolo
+`coco`, mejor modelo YOLO26s):
+
+| Métrica | Split contaminado | Split limpio | Δ |
+|---|---:|---:|---:|
+| Precisión | 99.9 % | 98.96 % | −0.94 pp |
+| Recall | 100.0 % | 97.42 % | −2.58 pp |
+| mAP@0.5 | no reportado | 99.47 % | — |
+| mAP@0.5:0.95 | no reportado | **88.07 %** | — |
+
+La caída en P/R es mínima porque **esas métricas no podían detectar la fuga**:
+con un solo taxón por imagen y una caja que ocupa el 52.6 % del cuadro, P/R a
+umbral fijo están saturadas con fuga y sin ella. La métrica que sí discrimina
+—mAP@0.5:0.95, que el reporte anterior no incluía— deja 12 puntos de margen.
+
+Dos consecuencias que se sostienen:
+
+- **El confusor de sesión (§3) sobrevive al re-split.** La caída pequeña es
+  evidencia a favor de esa tesis, no en contra: el atajo que el modelo usa no
+  era (solo) memorizar especímenes.
+- **Elegir la métrica es parte del diseño experimental.** Reportar P/R/F1 en
+  este régimen equivale a no medir.
+
+El README ya documenta los números del split limpio. La evaluación completa
+está en `reports/paper/eval_overall.csv` y la auditoría independiente en
+`reports/paper/auditoria.md`.

@@ -15,7 +15,15 @@ from ultralytics import YOLO
 from config import config
 from models.attention_regularization import make_attention_regularized_trainer
 from utils.logger import get_training_logger
+from utils.runtime import pin_ultralytics_paths
 from utils.validators import validate_data_yaml_path, validate_directory_path
+
+# Protocolo estandar de evaluacion de mAP (COCO / Ultralytics). Separado a
+# proposito del punto de operacion de inferencia (config.confidence_threshold,
+# 0.3): son dos numeros distintos que responden preguntas distintas, y
+# mezclarlos fue el origen del hallazgo B5 de la auditoria.
+MAP_EVAL_CONF = 0.001
+MAP_EVAL_IOU = 0.7
 
 
 class YOLOTrainer:
@@ -33,11 +41,17 @@ class YOLOTrainer:
         Args:
             experiment_name: Nombre del experimento (usa config por defecto)
         """
+        # Ultralytics resuelve rutas desde un archivo global del usuario; sin
+        # esto los artefactos pueden terminar fuera del repo (auditoria S8).
+        pin_ultralytics_paths()
+
         self.experiment_name = experiment_name or config.experiment_name
         self.logger = get_training_logger(self.experiment_name)
         self.model: YOLO | None = None
         self.training_results = None
         self.eval_metrics: Any = None
+        # configuracion efectiva del ultimo train(), para environment.json
+        self.train_kwargs: dict[str, Any] = {}
 
         # Crear directorios necesarios
         self._setup_directories()
@@ -69,10 +83,10 @@ class YOLOTrainer:
 
         try:
             self.model = YOLO(model_name)
-            self.logger.info(f"✅ Modelo {model_name} cargado exitosamente")
+            self.logger.info(f"Modelo {model_name} cargado exitosamente")
             return self.model
         except Exception as e:
-            self.logger.error(f"❌ Error al cargar el modelo {model_name}: {e}")
+            self.logger.error(f"Error al cargar el modelo {model_name}: {e}")
             raise
 
     def validate_dataset(self, data_yaml_path: str) -> dict[str, Any]:
@@ -113,7 +127,7 @@ class YOLOTrainer:
                         f"Ruta de {split_key} no encontrada: {split_images_path}"
                     )
 
-            self.logger.info("✅ Dataset validado:")
+            self.logger.info("Dataset validado:")
             self.logger.info(f"   - Clases: {dataset_info.get('nc', 'N/A')}")
             self.logger.info(f"   - Nombres: {dataset_info.get('names', [])}")
             self.logger.info(f"   - Train: {dataset_info.get('train', 'N/A')}")
@@ -122,7 +136,7 @@ class YOLOTrainer:
             return dataset_info
 
         except Exception as e:
-            self.logger.error(f"❌ Error al validar el dataset: {e}")
+            self.logger.error(f"Error al validar el dataset: {e}")
             raise
 
     def train(self,
@@ -154,16 +168,18 @@ class YOLOTrainer:
             Ruta al mejor modelo entrenado
         """
         # Usar valores de configuración por defecto
-        epochs = epochs or config.training_epochs
-        img_size = img_size or config.img_size
-        batch_size = batch_size or config.batch_size
-        workers = workers or config.workers
+        epochs = epochs if epochs is not None else config.training_epochs
+        img_size = img_size if img_size is not None else config.img_size
+        batch_size = batch_size if batch_size is not None else config.batch_size
+        workers = workers if workers is not None else config.workers
         seed = seed if seed is not None else config.seed
         attention_reg_lambda = (
-            attention_reg_lambda if attention_reg_lambda is not None else config.attention_reg_lambda
+            attention_reg_lambda
+            if attention_reg_lambda is not None
+            else config.attention_reg_lambda
         )
 
-        self.logger.info("🚀 Iniciando entrenamiento del modelo")
+        self.logger.info("Iniciando entrenamiento del modelo")
         self.logger.info(f"   - Experimento: {self.experiment_name}")
         self.logger.info(f"   - Épocas: {epochs}")
         self.logger.info(f"   - Tamaño imagen: {img_size}")
@@ -216,7 +232,21 @@ class YOLOTrainer:
                 'deterministic': True,
                 'save': True,
                 'save_period': 10,  # Guardar cada 10 épocas
-                'patience': 30,     # Early stopping (dataset chico: converge lento)
+                # El recocido coseno (`cos_lr`) y el cierre de mosaico
+                # (`close_mosaic`) se calendarizan contra `epochs`, no contra la
+                # epoca en que la parada temprana corta. Con patience=30 las tres
+                # corridas de agosto pararon en 156/188/174 y el calendario quedo
+                # trunco: la tasa termino entre el 2 % y el 13 % de su pico en vez
+                # del 1 % previsto, y la fase final SIN mosaico (epoca 185) no se
+                # ejecuto en dos de los tres modelos. Esa fase es justamente la
+                # que afina la localizacion, que es donde estos modelos tienen su
+                # margen (mAP@0.5 0.994 vs mAP@0.5:0.95 0.891).
+                #
+                # Igualar patience a epochs desactiva la parada temprana y
+                # garantiza que el calendario se complete. No hay riesgo de
+                # entregar un modelo sobreajustado: Ultralytics guarda best.pt
+                # por metrica de validacion, no el ultimo.
+                'patience': epochs,
                 'cos_lr': True,
                 'amp': True,        # mixed precision: entra en 6 GB de VRAM
                 # --- augmentación anti-atajo ---
@@ -241,22 +271,31 @@ class YOLOTrainer:
                 )
                 train_kwargs['trainer'] = make_attention_regularized_trainer(attention_reg_lambda)
 
+            # Guardado para que environment.json registre la configuracion
+            # efectiva completa, augmentacion incluida: sin esto, los 14
+            # hiperparametros de augmentacion solo existen en el codigo del
+            # commit y la trazabilidad checkpoint -> config queda cortada
+            # (auditoria S2). `trainer` es una clase, no serializable.
+            self.train_kwargs = {
+                k: v for k, v in train_kwargs.items() if k != "trainer"
+            }
+
             # Iniciar entrenamiento
-            self.logger.info("🏋️ Iniciando entrenamiento...")
+            self.logger.info("Iniciando entrenamiento...")
             self.training_results = self.model.train(**train_kwargs)
 
             # Obtener ruta del mejor modelo.
             best_model_path = self._best_model_path()
 
             if os.path.exists(best_model_path):
-                self.logger.info("✅ Entrenamiento completado exitosamente")
+                self.logger.info("Entrenamiento completado exitosamente")
                 self.logger.info(f"   - Mejor modelo: {best_model_path}")
                 return best_model_path
             else:
                 raise FileNotFoundError(f"Modelo entrenado no encontrado: {best_model_path}")
 
         except Exception as e:
-            self.logger.error(f"❌ Error durante el entrenamiento: {e}")
+            self.logger.error(f"Error durante el entrenamiento: {e}")
             raise
 
     def evaluate(self,
@@ -282,13 +321,25 @@ class YOLOTrainer:
         Returns:
             Objeto de métricas de Ultralytics (DetMetrics)
         """
-        conf_threshold = conf_threshold or config.confidence_threshold
-        iou_threshold = iou_threshold or config.iou_threshold
+        # El mAP es el area bajo la curva precision-recall: evaluarlo con el conf
+        # de operacion (0.3) borra toda la cola de detecciones de baja confianza y
+        # produce un numero que no es comparable con la literatura. Ultralytics
+        # espera conf~0 en val(). El punto de operacion se reporta aparte, via
+        # ModelReport, y no se mezcla con esta medicion.
+        conf_threshold = (
+            conf_threshold if conf_threshold is not None else MAP_EVAL_CONF
+        )
+        iou_threshold = iou_threshold if iou_threshold is not None else MAP_EVAL_IOU
 
-        self.logger.info(f"📊 Evaluando rendimiento del modelo (split: {split})")
+        self.logger.info(f"Evaluando rendimiento del modelo (split: {split})")
         self.logger.info(f"   - Modelo: {model_path}")
         self.logger.info(f"   - Umbral confianza: {conf_threshold}")
         self.logger.info(f"   - Umbral IoU: {iou_threshold}")
+        if conf_threshold > 0.01:
+            self.logger.warning(
+                f"   conf={conf_threshold} trunca la curva PR: el mAP resultante "
+                f"no es comparable con el estandar (conf={MAP_EVAL_CONF})."
+            )
 
         try:
             eval_model = YOLO(model_path)
@@ -310,7 +361,7 @@ class YOLOTrainer:
             )
             self.eval_metrics = metrics
 
-            self.logger.info("✅ Evaluación completada")
+            self.logger.info("Evaluación completada")
             self.logger.info(f"   - mAP50: {metrics.box.map50:.4f}")
             self.logger.info(f"   - mAP50-95: {metrics.box.map:.4f}")
             self.logger.info(f"   - Precision: {metrics.box.mp:.4f}")
@@ -319,7 +370,7 @@ class YOLOTrainer:
             return metrics
 
         except Exception as e:
-            self.logger.error(f"❌ Error durante la evaluación: {e}")
+            self.logger.error(f"Error durante la evaluación: {e}")
             raise
 
     def _best_model_path(self) -> str:
@@ -383,33 +434,3 @@ class YOLOTrainer:
         except Exception as e:
             self.logger.error(f"Error al obtener resumen: {e}")
             return {"error": str(e)}
-
-    def save_training_config(self, output_path: str = "results"):
-        """
-        Guarda la configuración del entrenamiento.
-
-        Args:
-            output_path: Directorio donde guardar la configuración
-        """
-        config_data = {
-            "experiment_name": self.experiment_name,
-            "model_name": config.model_name,
-            "training_epochs": config.training_epochs,
-            "img_size": config.img_size,
-            "batch_size": config.batch_size,
-            "workers": config.workers,
-            "confidence_threshold": config.confidence_threshold,
-            "iou_threshold": config.iou_threshold,
-        }
-
-        config_file = Path(output_path) / f"{self.experiment_name}_config.yaml"
-
-        try:
-            with open(config_file, 'w', encoding='utf-8') as f:
-                yaml.dump(config_data, f, default_flow_style=False, indent=2)
-
-            self.logger.info(f"✅ Configuración guardada en: {config_file}")
-
-        except Exception as e:
-            self.logger.error(f"❌ Error al guardar configuración: {e}")
-            raise

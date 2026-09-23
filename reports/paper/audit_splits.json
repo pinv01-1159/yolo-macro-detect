@@ -1,0 +1,149 @@
+{
+  "dataset": "datasets/clean",
+  "n_classes": 19,
+  "group_integrity": {
+    "groups_per_split": {
+      "train": 473,
+      "valid": 81,
+      "test": 87
+    },
+    "groups_total_disk": 641,
+    "groups_in_json": 641,
+    "cross_split_group_collisions": [],
+    "images_on_disk_not_in_group_of_image": [],
+    "entries_in_json_not_on_disk": []
+  },
+  "label_integrity": {
+    "image_without_label": {
+      "n": 0,
+      "examples": []
+    },
+    "empty_label": {
+      "n": 0,
+      "examples": []
+    },
+    "label_without_image": {
+      "n": 0,
+      "examples": []
+    },
+    "coord_out_of_range": {
+      "n": 0,
+      "examples": []
+    },
+    "degenerate_box": {
+      "n": 0,
+      "examples": []
+    },
+    "class_id_out_of_range": {
+      "n": 0,
+      "examples": []
+    },
+    "malformed_line": {
+      "n": 0,
+      "examples": []
+    },
+    "box_exceeds_canvas": {
+      "n": 0,
+      "examples": []
+    }
+  },
+  "instances_per_split_disk": {
+    "train": {
+      "Ampullariidae": 142,
+      "Ancylidae": 112,
+      "Belostomatidae": 89,
+      "Ceratopogonidae": 122,
+      "Chironomidae": 117,
+      "Coenagrionidae": 118,
+      "Dytiscidae": 108,
+      "Gerridae": 93,
+      "Glossiphoniidae": 96,
+      "Hirudinidae": 77,
+      "Hydrophilidae": 113,
+      "Hyriidae": 156,
+      "Libellulidae": 131,
+      "Miridae": 77,
+      "Noteridae": 121,
+      "Notonectidae": 75,
+      "Physidae": 116,
+      "Planorbidae": 150,
+      "Psychodidae": 96
+    },
+    "valid": {
+      "Ampullariidae": 31,
+      "Ancylidae": 24,
+      "Belostomatidae": 20,
+      "Ceratopogonidae": 27,
+      "Chironomidae": 25,
+      "Coenagrionidae": 26,
+      "Dytiscidae": 24,
+      "Gerridae": 20,
+      "Glossiphoniidae": 22,
+      "Hirudinidae": 18,
+      "Hydrophilidae": 25,
+      "Hyriidae": 34,
+      "Libellulidae": 29,
+      "Miridae": 18,
+      "Noteridae": 27,
+      "Notonectidae": 16,
+      "Physidae": 25,
+      "Planorbidae": 33,
+      "Psychodidae": 21
+    },
+    "test": {
+      "Ampullariidae": 31,
+      "Ancylidae": 24,
+      "Belostomatidae": 19,
+      "Ceratopogonidae": 27,
+      "Chironomidae": 25,
+      "Coenagrionidae": 26,
+      "Dytiscidae": 24,
+      "Gerridae": 20,
+      "Glossiphoniidae": 22,
+      "Hirudinidae": 17,
+      "Hydrophilidae": 24,
+      "Hyriidae": 34,
+      "Libellulidae": 28,
+      "Miridae": 17,
+      "Noteridae": 26,
+      "Notonectidae": 16,
+      "Physidae": 25,
+      "Planorbidae": 32,
+      "Psychodidae": 21
+    }
+  },
+  "images_per_split_disk": {
+    "train": 1660,
+    "valid": 373,
+    "test": 370
+  },
+  "objects_per_image": {
+    "train": {
+      "total_images": 1660,
+      "with_1": 1344,
+      "with_gt1": 316,
+      "with_0": 0,
+      "max": 4
+    },
+    "valid": {
+      "total_images": 373,
+      "with_1": 319,
+      "with_gt1": 54,
+      "with_0": 0,
+      "max": 4
+    },
+    "test": {
+      "total_images": 370,
+      "with_1": 319,
+      "with_gt1": 51,
+      "with_0": 0,
+      "max": 4
+    }
+  },
+  "roboflow_aug_suffix_count": {
+    "train": 0,
+    "valid": 0,
+    "test": 0
+  },
+  "json_vs_disk_diffs": []
+}

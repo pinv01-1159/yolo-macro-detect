@@ -1,4 +1,4 @@
-# 🦐 YOLO Macroinvertebrados - Detección Automática de Macroinvertebrados Acuáticos
+# YOLO Macroinvertebrados - Detección Automática de Macroinvertebrados Acuáticos
 
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![YOLO](https://img.shields.io/badge/YOLO-11%2C12%2C26-green.svg)](https://github.com/ultralytics/ultralytics)
@@ -7,51 +7,58 @@
 
 Sistema de visión por computadora para la detección automática de macroinvertebrados acuáticos y evaluación de calidad del agua mediante inteligencia artificial. Este proyecto entrena y compara tres arquitecturas de detección de objetos (YOLO11s, YOLO12s y YOLO26s) para identificar 19 familias de macroinvertebrados y calcular índices bióticos BMWP para inferir la calidad ecológica del agua.
 
-> ⚠️ **Antes de leer las métricas: este dataset tiene una fuga de datos conocida y un confusor de fondo/sesión sin resolver.**
-> Los números de este README son del split reconstruido (ver [Limitaciones y fuga de datos](#-limitaciones-y-fuga-de-datos)) — léela antes de citar cualquier cifra de este proyecto en un paper.
+> **Antes de leer las métricas: la fuga de datos original ya fue detectada y corregida (split reconstruido por grupo); queda un confusor de fondo/sesión sin resolver.**
+> Los números de este README son del split reconstruido (ver [Limitaciones y fuga de datos](#limitaciones-y-fuga-de-datos)) — léela antes de citar cualquier cifra de este proyecto en un paper.
 
-## 📋 Tabla de Contenidos
+## Tabla de Contenidos
 
-- [Características](#-características)
-- [Resultados Destacados](#-resultados-destacados)
-- [Instalación](#-instalación)
-- [Configuración](#-configuración)
-- [Uso](#-uso)
-- [Pipeline](#-pipeline)
-- [Modelos Implementados](#-modelos-implementados)
-- [Evaluación de Calidad del Agua](#-evaluación-de-calidad-del-agua)
-- [Resultados Experimentales](#-resultados-experimentales)
-- [Limitaciones y Fuga de Datos](#-limitaciones-y-fuga-de-datos)
-- [Estructura del Proyecto](#-estructura-del-proyecto)
-- [API Reference](#-api-reference)
-- [Contribución](#-contribución)
-- [Licencia](#-licencia)
+- [Características](#características)
+- [Resultados Destacados](#resultados-destacados)
+- [Instalación](#instalación)
+- [Configuración](#configuración)
+- [Uso](#uso)
+- [Pipeline](#pipeline)
+- [Modelos Implementados](#modelos-implementados)
+- [Evaluación de Calidad del Agua](#evaluación-de-calidad-del-agua)
+- [Resultados Experimentales](#resultados-experimentales)
+- [Limitaciones y Fuga de Datos](#limitaciones-y-fuga-de-datos)
+- [Estructura del Proyecto](#estructura-del-proyecto)
+- [Uso Programático](#uso-programático)
+- [Licencia](#licencia)
 
-## ✨ Características
+## Características
 
-- 🔍 **Detección Automática**: Identificación de macroinvertebrados comparando tres arquitecturas YOLO (11s, 12s, 26s)
-- 📊 **19 Familias Detectadas**: Ampullariidae, Ancylidae, Belostomatidae, Ceratopogonidae, Chironomidae, Coenagrionidae, Dytiscidae, Gerridae, Glossiphoniidae, Hirudinidae, Hydrophilidae, Hyriidae, Libellulidae, Miridae, Noteridae, Notonectidae, Physidae, Planorbidae, Psychodidae
-- 🌊 **Evaluación de Calidad del Agua**: Cálculo automático del índice BMWP
-- 📈 **Métricas Detalladas**: mAP@0.5, mAP@0.5:0.95, precisión, recall, intervalos de confianza por bootstrap, barrido de confianza y latencia, por clase y por modelo
-- 🕵️ **Auditoría de dataset integrada**: detección de fuga por ráfaga/duplicados (`tools/build_clean_split.py`), medición del confusor de fondo (`tools/confound_check.py`, `tools/background_ablation.py`)
-- 🖼️ **Anotación Visual**: Generación automática de imágenes anotadas
-- 📝 **Logging Completo**: Sistema de logs para seguimiento de entrenamiento e inferencia
-- ⚙️ **Configuración Flexible**: Variables de entorno para personalización
-- 🚀 **Pipeline Automatizado**: Proceso completo desde dataset hasta inferencia
+- **Detección automática**: identificación de macroinvertebrados comparando tres arquitecturas YOLO (11s, 12s, 26s)
+- **19 familias detectadas**: Ampullariidae, Ancylidae, Belostomatidae, Ceratopogonidae, Chironomidae, Coenagrionidae, Dytiscidae, Gerridae, Glossiphoniidae, Hirudinidae, Hydrophilidae, Hyriidae, Libellulidae, Miridae, Noteridae, Notonectidae, Physidae, Planorbidae, Psychodidae
+- **Evaluación de calidad del agua**: cálculo automático del índice BMWP
+- **Métricas detalladas**: mAP@0.5, mAP@0.5:0.95, precisión, recall, intervalos de confianza por bootstrap, barrido de confianza y latencia, por clase y por modelo
+- **Auditoría de dataset integrada**: detección de fuga por ráfaga/duplicados (`tools/build_clean_split.py`), medición del confusor de fondo (`tools/confound_check.py`, `tools/background_ablation.py`)
+- **Anotación visual**: generación automática de imágenes anotadas
+- **Logging**: sistema de logs para seguimiento de entrenamiento e inferencia
+- **Configuración por variables de entorno**
+- **Pipeline automatizado**: proceso completo desde dataset hasta inferencia
 
-## 🏆 Resultados Destacados
+## Resultados Destacados
 
-### Métricas de Rendimiento (split limpio, sin fuga — test set, n=370 imágenes / 465 instancias)
+### Métricas de Rendimiento (split limpio, sin fuga — test: 370 imágenes / 458 instancias / 87 especímenes)
 
-| Modelo | Precisión | Recall | mAP@0.5 | mAP@0.5:0.95 | Latencia media (GPU) |
-|--------|-----------|--------|---------|--------------|----------------------|
-| **YOLO11s** | 99.6% | 99.3% | 98.7% | 86.1% | 9.5 ms |
-| **YOLO12s** | 100% | 99.8% | 99.3% | 87.8% | 12.2 ms |
-| **YOLO26s** | 98.4% | 99.4% | 98.9% | 87.5% | 9.8 ms |
+Protocolo estándar de mAP (`conf=0.001`, `iou=0.7`). Fuente: [`reports/paper/eval_overall.csv`](reports/paper/eval_overall.csv).
+
+| Modelo | Precisión | Recall | F1 | mAP@0.5 | mAP@0.5:0.95 |
+|--------|-----------|--------|-----|---------|--------------|
+| **YOLO11s** | 98.79% | 96.01% | 0.974 | 99.25% | 86.41% |
+| **YOLO12s** | 99.05% | 99.76% | 0.994 | 99.50% | 87.89% |
+| **YOLO26s** | 98.96% | 97.42% | 0.982 | 99.47% | **88.07%** |
+
+> Precisión y recall de esta tabla son los del protocolo de mAP (`conf=0.001`),
+> no los del punto de operación del sistema (`τ=0.30`), que son otros números.
+> No se publican latencias: las que había se medían sin *warm-up* ni
+> sincronización CUDA e incluían lectura de disco, así que no eran latencia de
+> inferencia y no tienen respaldo en ningún artefacto.
 
 mAP@0.5 está prácticamente saturado en los tres modelos (satura por ser un umbral de IoU muy laxo dado el tamaño de los especímenes en estas fotos) — **mAP@0.5:0.95 es la métrica que separa modelos y la que hay que citar como principal.**
 
-Estos números son casi idénticos a los que reportaba el dataset con la fuga de datos original (99.4% mAP@0.5). Eso **no** significa que la fuga no importara — significa que el split limpio no alcanza para exponer del todo un segundo problema estructural del dataset (ver [Limitaciones](#-limitaciones-y-fuga-de-datos)): el fondo/sesión de laboratorio sigue siendo parcialmente predictivo de la clase. Ningún número de este README debe leerse como evidencia de generalización a un arroyo real sin leer esa sección primero.
+Estos números son casi idénticos a los que reportaba el dataset con la fuga de datos original (99.4% mAP@0.5). Eso **no** significa que la fuga no importara — significa que el split limpio no alcanza para exponer del todo un segundo problema estructural del dataset (ver [Limitaciones](#limitaciones-y-fuga-de-datos)): el fondo/sesión de laboratorio sigue siendo parcialmente predictivo de la clase. Ningún número de este README debe leerse como evidencia de generalización a un arroyo real sin leer esa sección primero.
 
 ### Dataset
 - **2,403 imágenes fuente únicas** (tras descartar duplicados por aumentación de Roboflow), reagrupadas en **641 grupos por espécimen/ráfaga**
@@ -59,7 +66,7 @@ Estos números son casi idénticos a los que reportaba el dataset con la fuga de
 - **Split reconstruido por grupo** (no por imagen): 1,660 train / 373 valid / 370 test — ver [`tools/build_clean_split.py`](tools/build_clean_split.py)
 - **Aumentación en entrenamiento** con parámetros no estándar, elegidos específicamente para pelear contra el confusor de fondo (color/geometría/mosaico fuertes) — ver [`models/trainer.py`](models/trainer.py)
 
-## 🛠️ Instalación
+## Instalación
 
 ### Requisitos Previos
 
@@ -88,7 +95,7 @@ Estos números son casi idénticos a los que reportaba el dataset con la fuga de
    # Editar .env con tus credenciales
    ```
 
-## ⚙️ Configuración
+## Configuración
 
 ### Variables de Entorno
 
@@ -120,11 +127,10 @@ IOU_THRESHOLD=0.6
 
 # Configuración de logging
 LOG_LEVEL=INFO
-SAVE_RESULTS=True
 
-# Configuración BMWP (Evaluación de Calidad del Agua)
+# Índice BMWP (calidad del agua). El índice se define por SITIO de muestreo:
+# usar predict_batch() sobre todas las fotos del sitio, no una imagen suelta.
 ENABLE_BMWP=True
-BMWP_CONFIDENCE_WEIGHT=True
 ```
 
 ### Obtener API Key de Roboflow
@@ -133,7 +139,7 @@ BMWP_CONFIDENCE_WEIGHT=True
 2. Ir a Account Settings > API Key
 3. Copiar la API key y agregarla al archivo `.env`
 
-## 🚀 Uso
+## Uso
 
 ### Pipeline Completo
 
@@ -172,7 +178,11 @@ uv run main.py --predict --image test.jpg --model runs/detect/macros/weights/bes
 Calcular índice BMWP basado en las detecciones:
 
 ```bash
-uv run main.py --predict --image sample.jpg --model best_model.pt --calculate-bmwp
+uv run main.py --predict --image sample.jpg --model checkpoints/yolo26s_clean_best.pt
+
+# Un SITIO de muestreo completo -> índice BMWP.
+# Es el camino correcto: el índice se define por sitio, no por fotografía.
+uv run main.py --site fotos_del_sitio/ --model checkpoints/yolo26s_clean_best.pt
 ```
 
 ### Opciones Avanzadas
@@ -192,11 +202,11 @@ uv run main.py --predict \
     --calculate-bmwp
 ```
 
-## 🔄 Pipeline
+## Pipeline
 
 ### 1. Descarga de Dataset
 - Conexión automática con Roboflow
-- Descarga de la versión del dataset elegida (`--dataset-version`) — el export crudo trae duplicados por aumentación de Roboflow y el split original **tiene fuga por ráfaga**, así que hay que reconstruirlo con `tools/build_clean_split.py` antes de entrenar (ver [Limitaciones y Fuga de Datos](#-limitaciones-y-fuga-de-datos))
+- Descarga de la versión del dataset elegida (`--dataset-version`) — el export crudo trae duplicados por aumentación de Roboflow y el split original **tiene fuga por ráfaga**, así que hay que reconstruirlo con `tools/build_clean_split.py` antes de entrenar (ver [Limitaciones y Fuga de Datos](#limitaciones-y-fuga-de-datos))
 - Validación de estructura y contenido
 - Generación de archivo `data.yaml`
 
@@ -219,19 +229,19 @@ uv run main.py --predict \
 - Cálculo de índice BMWP (opcional)
 - Exportación de resultados
 
-## 🤖 Modelos Implementados
+## Modelos Implementados
 
 Las tres arquitecturas se entrenan localmente con el mismo pipeline (`main.py --train`), el mismo split, la misma configuración y la misma semilla (42) — solo cambia `MODEL_NAME`. Eso hace la comparación entre ellas válida.
 
 | Modelo | Parámetros | Hardware usado | Notas |
 |--------|-----------|-----------------|-------|
-| **YOLO11s** | 9.4M | RTX 4050 Laptop (6 GB), AMP | mejor checkpoint en época 126/156 |
-| **YOLO12s** | ~9.3M | RTX 4050 Laptop (6 GB), AMP, batch=8 | requirió bajar batch por OOM; mejor en época 158/188 |
-| **YOLO26s** | 10.0M | RTX 4050 Laptop (6 GB), AMP | arquitectura end-to-end (NMS-free); mejor en época 144/174 |
+| **YOLO11s** | 9.4M | RTX 4050 Laptop (6 GB), AMP | mejor checkpoint en época 173/200 |
+| **YOLO12s** | ~9.3M | RTX 4050 Laptop (6 GB), AMP, batch=8 | requirió bajar batch por OOM; mejor en época 158/200 |
+| **YOLO26s** | 10.0M | RTX 4050 Laptop (6 GB), AMP | arquitectura end-to-end (NMS-free); mejor en época 144/200 |
 
 Config de entrenamiento: `imgsz=640`, `epochs=200` con early stopping (`patience=30`), `cos_lr=True`, augmentación anti-atajo fuerte (ver [`models/trainer.py`](models/trainer.py)). El `EXPERIMENT_NAME=<modelo>_clean` en `runs/detect/` y `results/` identifica cada corrida.
 
-## 🌊 Evaluación de Calidad del Agua
+## Evaluación de Calidad del Agua
 
 ### Índice BMWP (Biological Monitoring Working Party)
 
@@ -259,7 +269,12 @@ El sistema calcula automáticamente la calidad del agua basándose en las famili
 | Libellulidae | 8 |
 | Hirudinidae | 9 |
 
-> ⚠️ `utils/bmwp_calculator.py` solo tiene puntaje BMWP cargado para 9 de las 19 familias que detectan los modelos actuales (falta Ampullariidae, Ancylidae, Ceratopogonidae, Gerridae, Glossiphoniidae, Hydrophilidae, Hyriidae, Miridae, Notonectidae y Psychodidae). Si el detector encuentra una de esas 10 familias, `get_family_score()` devuelve `None` y esa detección queda fuera del cálculo del índice — no fallar en silencio, pero sí subestimar el BMWP total si aparecen. Hay que completar la tabla con la fuente bibliográfica correspondiente antes de usar el índice en un reporte real.
+> **Cobertura:** `utils/bmwp_calculator.py` tiene puntaje para **las 19 familias**
+> que detectan los modelos. Dos de ellas —**Hyriidae** y **Miridae**— no figuran en
+> la tabla BMWP/Col original; su puntaje se asigna por proximidad taxonómica y cada
+> resultado lo declara como **provisional** hasta que un especialista lo confirme.
+> Si apareciera una familia sin puntaje, se excluye del índice y se reporta en
+> `familias_sin_puntaje`, nunca en silencio.
 
 ### Ejemplo de Cálculo
 
@@ -293,30 +308,58 @@ result = bmwp_calculator.calculate_bmwp(detections)
 print(f"BMWP: {result.total_score} - {result.water_quality_description}")
 ```
 
-## 📊 Resultados Experimentales
+## Resultados Experimentales
 
-Todos los números de esta sección son del **split reconstruido sin fuga** (`datasets/clean/`, ver siguiente sección), evaluados una sola vez sobre `test/` (nunca usado para elegir pesos ni para tunear nada). Los artefactos crudos detrás de cada número —predicciones por imagen, matriz de confusión completa, metadata de entorno/reproducibilidad— están en `results/<experimento>/` para cada modelo.
+Todos los números de esta sección son del **split reconstruido sin fuga** (`datasets/clean/`, ver siguiente sección), evaluados una sola vez sobre `test/` (nunca usado para elegir pesos ni para tunear nada). Los artefactos crudos detrás de cada número —predicciones por imagen, métricas por
+familia, matrices de confusión— están versionados en
+[`reports/paper/`](reports/paper/); la metadata de entorno y la configuración
+efectiva de cada corrida, en `checkpoints/<modelo>_clean_environment.json`.
+(`results/` es el directorio de salida local del pipeline y está gitignorado.)
 
 ### Comparación entre arquitecturas (test set)
 
-| Modelo | mAP@0.5 | mAP@0.5:0.95 | Precisión | Recall | Latencia (GPU) | Mejor época |
-|--------|---------|--------------|-----------|--------|-----------------|-------------|
-| YOLO11s | 98.71% | **86.15%** | 99.63% | 99.31% | 9.5 ms | 126/156 |
-| YOLO12s | 99.34% | **87.75%** | 100.00% | 99.81% | 12.2 ms | 158/188 |
-| YOLO26s | 98.90% | **87.51%** | 98.40% | 99.37% | 9.8 ms | 144/174 |
+Protocolo estándar de mAP (`conf=0.001`, `iou=0.7`), reproducible con
+[`tools/audit_eval_checkpoints.py`](tools/audit_eval_checkpoints.py):
 
-Las tres arquitecturas convergen al mismo techo de rendimiento (mAP@0.5:0.95 entre 86-88%), entrenadas por separado con el mismo split. Que arquitecturas independientes lleguen al mismo lugar es un dato en sí mismo — ver [Limitaciones](#-limitaciones-y-fuga-de-datos).
+| Modelo | mAP@0.5 | mAP@0.5:0.95 | Precisión | Recall | Mejor época |
+|--------|---------|--------------|-----------|--------|-------------|
+| YOLO11s | 99.25% | **86.41%** | 98.79% | 96.01% | 173/200 |
+| YOLO12s | 99.50% | **87.89%** | 99.05% | 99.76% | 158/200 |
+| YOLO26s | 99.47% | **88.07%** | 98.96% | 97.42% | 144/200 |
+
+> Una versión anterior de esta tabla se generó con `conf=0.3`, el umbral de
+> operación. Ese valor trunca la cola de la curva precisión–recall y produce un
+> mAP que no es comparable con la literatura. El código ya no permite ese
+> protocolo por defecto (ver `MAP_EVAL_CONF` en
+> [`models/trainer.py`](models/trainer.py)). Las latencias que acompañaban la
+> tabla se retiraron: se medían sin *warm-up* ni sincronización CUDA e incluían
+> lectura de disco, así que no eran latencia de inferencia.
+
+Las tres arquitecturas convergen al mismo techo de rendimiento (mAP@0.5:0.95 entre 86-88%), entrenadas por separado con el mismo split. Que arquitecturas independientes lleguen al mismo lugar es un dato en sí mismo — ver [Limitaciones](#limitaciones-y-fuga-de-datos).
 
 ### Clases más débiles (consistentes en las tres arquitecturas)
 
 | Clase | AP@0.5:0.95 (YOLO11s / YOLO12s / YOLO26s) | Nota |
 |-------|---------------------------------------------|------|
-| Chironomidae | 0.531 / 0.633 / 0.575 | la peor en los tres modelos — larva de díptero chica y alargada |
-| Ceratopogonidae | 0.774 / 0.798 / 0.790 | segunda peor en los tres — también díptero chico |
+| Chironomidae | 0.564 / 0.633 / 0.601 | la peor en los tres modelos — larva de díptero filiforme y curva |
+| Ceratopogonidae | 0.751 / 0.823 / 0.791 | segunda peor en los tres — también larva alargada |
 
-Que el mismo par de clases sea el más débil en tres arquitecturas independientes apunta a dificultad genuina de detección de objeto chico, no a ruido de una corrida particular.
+Mismo protocolo que la tabla anterior (`coco`), de [`reports/paper/eval_per_class.csv`](reports/paper/eval_per_class.csv).
 
-## 🕵️ Limitaciones y Fuga de Datos
+Que el mismo par de clases sea el más débil en tres arquitecturas independientes
+apunta a una dificultad genuina del taxón, no a ruido de una corrida particular.
+
+**No es dificultad de objeto chico.** La medición morfométrica
+([`tools/audit_bbox_dimensions.py`](tools/audit_bbox_dimensions.py)) descarta esa
+explicación: las 3 032 instancias del conjunto son *large* en escala COCO y la caja
+mediana ocupa el 52.6 % del cuadro. Chironomidae es, de hecho, la 5.ª familia por
+tamaño de caja de 19. Lo que predice el desempeño es la **elongación**
+(r = −0.838, R² = 0.702, n = 19 familias): son larvas filiformes y curvas, y una
+caja alineada a ejes que las encierra contiene mayoritariamente fondo, lo que
+penaliza el IoU en umbrales altos. El área no alcanza significancia (p ≈ 0.07) y
+se anula al controlar por forma.
+
+## Limitaciones y Fuga de Datos
 
 ### 1. Fuga por ráfaga (encontrada y corregida)
 
@@ -352,6 +395,20 @@ python tools/build_clean_split.py datasets/v9 datasets/clean
 | Dytiscidae | 21-25% |
 | resto (14 clases) | ≤8% |
 
+> **Aviso metodológico sobre esta tabla.** El experimento asume que la caja del
+> organismo es chica respecto de la imagen, y en este conjunto no lo es: la caja
+> mediana ocupa el 52.6 % del cuadro y el 11.9 % de las instancias supera el 90 %.
+> Para esas, "solo fondo" borra casi toda la imagen y "solo bicho" con 15 % de
+> margen devuelve prácticamente la foto original —con su fondo—, así que el brazo
+> "sin contexto" sí tiene contexto. Parte del gradiente entre familias puede
+> reflejar **cuánto fondo quedó sin tapar** antes que cuánto depende cada familia
+> del contexto: es un confusor del instrumento de medición.
+>
+> `tools/background_ablation.py` ahora reporta además el subconjunto con
+> `area_frac < 0.40`, que es donde la pregunta es interpretable. **Las cifras de
+> arriba son previas a esa corrección y deben releerse con el experimento
+> re-ejecutado antes de citarse en una publicación.**
+
 ### 3. Tres intentos de mitigación, mismo resultado nulo
 
 Se probaron tres técnicas de la literatura para reducir el atajo por fondo, sin tocar el split ni bajar la augmentación existente:
@@ -371,7 +428,7 @@ Ninguna intervención de entrenamiento va a resolver esto — es un problema de 
 
 **Consecuencia práctica:** un mAP alto acá no demuestra que el sistema vaya a funcionar identificando macroinvertebrados en un arroyo nuevo, fuera de las condiciones fotográficas de este laboratorio. Cualquier paper basado en este proyecto tiene que reportar el número agregado, la tabla de atajo por clase, y esta limitación explícitamente — no como nota al pie.
 
-## 📁 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
 yolo-macro-detect/
@@ -403,114 +460,45 @@ yolo-macro-detect/
 │   ├── build_clean_split.py       # Reconstruye el split agrupando por espécimen
 │   ├── confound_check.py          # Mide el confusor de sesión puro (sin ver al bicho)
 │   ├── background_ablation.py     # Mide dependencia del fondo en un modelo ya entrenado
-│   └── copy_paste_augment.py      # Augmentación copy-paste "Same Y" (intento de mitigación, no funcionó)
+│   ├── copy_paste_augment.py      # Augmentación copy-paste "Same Y" (intento de mitigación, no funcionó)
+│   ├── audit_*.py                 # Auditoría técnica: procedencia de cada cifra del informe
+│   └── make_*.py                  # Regeneran las figuras del informe
 │
 ├── utils/                         # Utilidades
 │   ├── __init__.py
 │   ├── logger.py
+│   ├── runtime.py                 # Ancla las rutas de Ultralytics al repositorio
 │   ├── validators.py
-│   └── bmwp_calculator.py
+│   └── bmwp_calculator.py         # Índice BMWP/Col por sitio (presencia/ausencia + ASPT)
 │
-├── examples/                      # Ejemplos de uso
-│   └── example_usage.py
+├── checkpoints/                   # Mejores pesos por arquitectura (git-lfs) + entorno
+├── reports/paper/                 # Artefactos citables del informe (versionados)
+├── informe/                       # Informe técnico LaTeX + figuras
 │
-├── logs/                          # Logs del sistema
 ├── datasets/                      # Datasets descargados (gitignored)
+├── logs/                          # Logs del sistema (gitignored)
 ├── results/                       # Resultados de inferencia y reportes (gitignored)
 └── runs/                          # Checkpoints y resultados de entrenamiento (gitignored)
 ```
 
-## 📚 API Reference
-
-### MacroinvertebratePipeline
-
-Clase principal para manejo del pipeline completo.
+## Uso programático
 
 ```python
 from main import MacroinvertebratePipeline
 
 pipeline = MacroinvertebratePipeline()
-
-# Configurar dataset
-data_yaml = pipeline.setup_dataset(version=5)
-
-# Entrenar modelo
-model_path = pipeline.train_model(data_yaml, epochs=50)
-
-# Realizar predicción con BMWP
-results = pipeline.predict_image("test.jpg", model_path, calculate_bmwp=True)
+data_yaml = pipeline.setup_dataset(version=1)                    # dataset (split corregido, ver .env)
+model_path = pipeline.train_model(data_yaml, epochs=200)         # entrenamiento
+results = pipeline.predict_image("test.jpg", model_path)         # predicción
 ```
 
-### YOLOTrainer
+Cada módulo (`models/trainer.py`, `models/inference.py`, `utils/bmwp_calculator.py`, `data/dataset_manager.py`) documenta su API en el propio docstring de la clase.
 
-Clase para entrenamiento de modelos YOLO.
-
-```python
-from models import YOLOTrainer
-
-trainer = YOLOTrainer("experimento_1")
-trainer.load_model("yolo11s.pt")
-model_path = trainer.train("data.yaml", epochs=50)
-metrics = trainer.evaluate(model_path, "data.yaml")
-```
-
-### YOLOInference
-
-Clase para inferencia con modelos entrenados.
-
-```python
-from models import YOLOInference
-
-inference = YOLOInference("best_model.pt")
-results = inference.predict_image("image.jpg", conf_threshold=0.3, calculate_bmwp=True)
-bmwp_score = inference.calculate_bmwp(results['detecciones'])
-inference.export_results(results, "output.json")
-```
-
-### BMWPCalculator
-
-Clase para cálculo del índice BMWP.
-
-```python
-from utils.bmwp_calculator import bmwp_calculator
-
-# Calcular BMWP
-result = bmwp_calculator.calculate_bmwp(detections)
-
-# Obtener información
-families = bmwp_calculator.get_available_families()
-water_quality_info = bmwp_calculator.get_water_quality_info()
-
-# Formatear para JSON
-json_result = bmwp_calculator.format_result_for_json(result)
-```
-
-### DatasetManager
-
-Clase para manejo de datasets.
-
-```python
-from data import DatasetManager
-
-manager = DatasetManager()
-manager.setup_roboflow_connection()
-dataset_info = manager.download_dataset(version=5)
-manager.validate_dataset_structure(dataset_info["location"])
-```
-
-
-### Guías de Contribución
-
-- Seguir las convenciones de código PEP 8
-- Agregar docstrings a todas las funciones
-- Incluir tests para nuevas funcionalidades
-- Actualizar documentación según sea necesario
-
-## 📄 Licencia
+## Licencia
 
 Este proyecto está bajo la Licencia MIT. Ver el archivo [LICENSE](LICENSE) para más detalles.
 
-## 👨‍💻 Autor
+## Autor
 
 **Kevin M. Galeano**
 - **Proyecto**: PINV01-1159
@@ -519,7 +507,7 @@ Este proyecto está bajo la Licencia MIT. Ver el archivo [LICENSE](LICENSE) para
 - **GitHub**: [@gsmkev](https://github.com/gsmkev)
 
 
-## 🙏 Agradecimientos
+## Agradecimientos
 
 - **CONACYT Paraguay** por el financiamiento del proyecto PROCIENCIA
 - [Ultralytics](https://github.com/ultralytics/ultralytics) por los modelos YOLO
@@ -528,7 +516,3 @@ Este proyecto está bajo la Licencia MIT. Ver el archivo [LICENSE](LICENSE) para
 - Equipo del proyecto PINV01-1159 por el soporte y colaboración
 - Biólogos especialistas por la validación en campo
 
----
-
-⭐ Si este proyecto te ha sido útil, ¡considera darle una estrella en GitHub!
- 

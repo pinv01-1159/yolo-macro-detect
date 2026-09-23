@@ -6,8 +6,11 @@ confianza por bootstrap, barrido de umbral de confianza y benchmark de latencia.
 import csv
 import json
 import shutil
+import subprocess
 import time
 from collections.abc import Sequence
+from datetime import datetime
+from importlib.metadata import version
 from pathlib import Path
 from typing import Any
 
@@ -16,13 +19,19 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
+import torch
 from ultralytics import YOLO
 
 from utils.logger import setup_logger
+from utils.runtime import pin_ultralytics_paths
 
 CONFIDENCE_SWEEP = (0.1, 0.3, 0.5, 0.7, 0.9)
+# El barrido corre sobre validacion: elegir el umbral mirando test lo convierte
+# en un hiperparametro ajustado al conjunto de reporte (auditoria B6).
+SWEEP_SPLIT = "val"
 BOOTSTRAP_RESAMPLES = 1000
 BOOTSTRAP_SEED = 42
+LATENCY_WARMUP = 10
 CURVE_FILES = (
     "confusion_matrix.png",
     "confusion_matrix_normalized.png",
@@ -37,14 +46,29 @@ class ModelReport:
     """Genera un reporte de evaluación estadística para un modelo YOLO entrenado."""
 
     def __init__(self, model_path: str | Path, data_yaml_path: str | Path):
+        pin_ultralytics_paths()  # ver utils/runtime.py (auditoria S8)
         self.model_path = Path(model_path)
         self.data_yaml_path = Path(data_yaml_path)
         self.logger = setup_logger("model_report")
         self._last_model: Any = None
+        self._protocol_overrides: dict[str, Any] = {}
 
     def generate(self,
                  metrics: Any = None,
-                 output_dir: str | Path = "results/model_report") -> dict[str, Any]:
+                 output_dir: str | Path = "results/model_report",
+                 protocol: dict[str, Any] | None = None) -> dict[str, Any]:
+        """Genera el reporte.
+
+        Args:
+            metrics: métricas ya calculadas; si es None se evalúa acá.
+            output_dir: destino de los artefactos.
+            protocol: conf/iou/imgsz/split efectivos con que se produjo
+                `metrics`. Conviene pasarlos cuando las métricas vienen de
+                afuera: quien evaluó los conoce con certeza, mientras que
+                deducirlos del objeto de métricas depende de la versión de
+                Ultralytics.
+        """
+        self._protocol_overrides = dict(protocol or {})
         output_path = Path(output_dir)
         output_path.mkdir(parents=True, exist_ok=True)
 
@@ -63,6 +87,10 @@ class ModelReport:
         report: dict[str, Any] = {
             "model_path": str(self.model_path),
             "data_yaml_path": str(self.data_yaml_path),
+            # Sin esto, dos corridas del mismo modelo con protocolos distintos
+            # producen JSONs indistinguibles. Es la razon por la que B5 y B6
+            # pasaron desapercibidos durante meses (auditoria S9).
+            "protocol": self._protocol(metrics),
             "overall": {
                 "map50": float(metrics.box.map50),
                 "map50_95": float(metrics.box.map),
@@ -90,6 +118,57 @@ class ModelReport:
         self.logger.info(f"✅ Reporte de modelo generado en: {output_path}")
         return report
 
+    def _protocol(self, metrics: Any) -> dict[str, Any]:
+        """Deja por escrito con que se produjo cada numero de este reporte.
+
+        `overall` y `per_class` salen de la evaluacion que se recibe o se corre
+        aca; `confidence_sweep` sale de validacion (ver `_confidence_sweep`).
+        Son protocolos distintos y no deben compararse entre si.
+        """
+        # Los parametros efectivos no viven en un solo lugar: segun la version
+        # de Ultralytics `metrics.args` puede venir en None, y entonces hay que
+        # leerlos del validador, que existe recien despues de val(). Se prueban
+        # las tres fuentes en orden de confiabilidad.
+        fuentes = [
+            self._protocol_overrides,
+            getattr(metrics, "args", None),
+            getattr(getattr(self._last_model, "validator", None), "args", None),
+        ]
+
+        def _arg(name: str) -> Any:
+            for fuente in fuentes:
+                if fuente is None:
+                    continue
+                valor = (
+                    fuente.get(name) if isinstance(fuente, dict)
+                    else getattr(fuente, name, None)
+                )
+                if valor is not None:
+                    return valor
+            return None
+
+        try:
+            commit = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                capture_output=True, text=True, check=True, timeout=5,
+            ).stdout.strip()
+        except (subprocess.SubprocessError, OSError):
+            commit = None
+
+        return {
+            "overall_and_per_class": {
+                "split": _arg("split") or "test",
+                "conf": _arg("conf"),
+                "iou": _arg("iou"),
+                "imgsz": _arg("imgsz"),
+            },
+            "confidence_sweep": {"split": SWEEP_SPLIT, "thresholds": list(CONFIDENCE_SWEEP)},
+            "bootstrap": {"resamples": BOOTSTRAP_RESAMPLES, "seed": BOOTSTRAP_SEED},
+            "ultralytics_version": version("ultralytics"),
+            "git_commit": commit,
+            "generated_at": datetime.now().astimezone().isoformat(),
+        }
+
     def _per_class_table(self, metrics: Any, names: dict[int, str]) -> list[dict[str, Any]]:
         box = metrics.box
         table = []
@@ -104,13 +183,56 @@ class ModelReport:
             })
         return table
 
+    def _load_group_of_image(self) -> dict[str, int]:
+        """Mapa imagen -> especimen, desde el manifiesto del split.
+
+        Vacio si no esta disponible: el bootstrap cae entonces a remuestreo por
+        imagen, que subestima el error (ver `_bootstrap_ci`).
+        """
+        report_path = self.data_yaml_path.parent / "split_report.json"
+        if not report_path.exists():
+            return {}
+        try:
+            with open(report_path) as fh:
+                return json.load(fh).get("group_of_image", {}) or {}
+        except (json.JSONDecodeError, OSError):
+            return {}
+
     def _bootstrap_ci(self, image_metrics: dict[str, dict[str, float]]) -> dict[str, Any]:
-        precisions = np.array([m["precision"] for m in image_metrics.values()])
-        recalls = np.array([m["recall"] for m in image_metrics.values()])
-        f1s = np.array([m["f1"] for m in image_metrics.values()])
+        """IC95 por bootstrap, remuestreando **especimenes** y no imagenes.
+
+        El protocolo de captura toma varias fotos casi identicas de cada
+        ejemplar, asi que las imagenes no son observaciones independientes.
+        Remuestrearlas trata como informacion nueva lo que es la misma foto y
+        estrecha el intervalo de forma artificial: medido sobre este conjunto,
+        por un factor cercano a 1.5 (auditoria S1). La unidad independiente es
+        el especimen: 87 en test, no 370.
+        """
+        group_of_image = self._load_group_of_image()
+
+        # las claves de image_metrics son rutas; el manifiesto usa el stem
+        def _group_for(key: str) -> Any:
+            stem = Path(key).stem
+            return group_of_image.get(stem, group_of_image.get(key, f"__img__{key}"))
+
+        by_group: dict[Any, list[dict[str, float]]] = {}
+        for key, m in image_metrics.items():
+            by_group.setdefault(_group_for(key), []).append(m)
+
+        grouped = bool(group_of_image) and len(by_group) < len(image_metrics)
+
+        # cada especimen aporta el promedio de sus fotos: una foto extra de un
+        # mismo ejemplar no debe pesar mas que un ejemplar entero
+        def _mean(items: list[dict[str, float]], field: str) -> float:
+            return float(np.mean([m[field] for m in items]))
+
+        units = list(by_group.values())
+        precisions = np.array([_mean(u, "precision") for u in units])
+        recalls = np.array([_mean(u, "recall") for u in units])
+        f1s = np.array([_mean(u, "f1") for u in units])
 
         rng = np.random.default_rng(BOOTSTRAP_SEED)
-        n = len(precisions)
+        n = len(units)
         boot_p, boot_r, boot_f1 = [], [], []
         for _ in range(BOOTSTRAP_RESAMPLES):
             idx = rng.integers(0, n, size=n)
@@ -126,13 +248,37 @@ class ModelReport:
                 "ci_high": float(np.percentile(arr, 97.5)),
             }
 
-        return {"precision": _ci(boot_p), "recall": _ci(boot_r), "f1": _ci(boot_f1), "n_images": n}
+        return {
+            "precision": _ci(boot_p),
+            "recall": _ci(boot_r),
+            "f1": _ci(boot_f1),
+            "resample_unit": "specimen" if grouped else "image",
+            "n_units": n,
+            "n_images": len(image_metrics),
+            "note": (
+                "Remuestreo por especimen: la unidad independiente es el ejemplar, "
+                "no la foto." if grouped else
+                "Sin split_report.json: remuestreo por imagen, el IC esta "
+                "subestimado (ver auditoria S1)."
+            ),
+        }
 
     def _confidence_sweep(self, model: Any) -> list[dict[str, float]]:
+        """Barrido de umbral sobre **validacion**, nunca sobre test.
+
+        Elegir el punto de operacion mirando la curva sobre el conjunto de
+        reporte es seleccionar un hiperparametro en test: deja de ser held-out y
+        el numero publicado pasa a ser una cota optimista en vez de un
+        resultado. El umbral que sale de aca se aplica a test una sola vez.
+        """
         sweep = []
         for conf in CONFIDENCE_SWEEP:
             metrics = model.val(
-                data=str(self.data_yaml_path), split="test", conf=conf, plots=False, verbose=False
+                data=str(self.data_yaml_path),
+                split=SWEEP_SPLIT,
+                conf=conf,
+                plots=False,
+                verbose=False,
             )
             precision = float(metrics.box.mp)
             recall = float(metrics.box.mr)
@@ -148,22 +294,60 @@ class ModelReport:
             return {"mean": 0.0, "median": 0.0, "p95": 0.0, "device": "unknown", "n_images": 0}
 
         image_paths = sorted(test_images_dir.iterdir())[:max_images]
-        durations_ms = []
-        for image_path in image_paths:
-            start = time.perf_counter()
-            model.predict(str(image_path), verbose=False)
-            durations_ms.append((time.perf_counter() - start) * 1000)
+        if not image_paths:
+            return {"mean": 0.0, "median": 0.0, "p95": 0.0, "device": "unknown", "n_images": 0}
 
-        arr = np.array(durations_ms) if durations_ms else np.array([0.0])
         device = (
             str(next(model.model.parameters()).device) if hasattr(model, "model") else "unknown"
         )
+        on_cuda = device.startswith("cuda")
+
+        # Sin warm-up las primeras iteraciones miden la compilacion de kernels y
+        # la reserva de memoria, no la inferencia.
+        for image_path in image_paths[:LATENCY_WARMUP]:
+            model.predict(str(image_path), verbose=False)
+        if on_cuda:
+            torch.cuda.synchronize()
+
+        # Ultralytics ya separa preprocess/inference/postprocess en
+        # results.speed; cronometrar el predict() completo mide ademas la
+        # lectura de disco y la decodificacion JPEG, que no son latencia de
+        # inferencia (auditoria S10).
+        inference_ms, e2e_ms = [], []
+        for image_path in image_paths:
+            start = time.perf_counter()
+            results = model.predict(str(image_path), verbose=False)
+            if on_cuda:
+                torch.cuda.synchronize()
+            e2e_ms.append((time.perf_counter() - start) * 1000)
+            speed = getattr(results[0], "speed", None) if results else None
+            if speed:
+                inference_ms.append(float(speed.get("inference", 0.0)))
+
+        def _stats(values: list[float]) -> dict[str, float]:
+            arr = np.array(values) if values else np.array([0.0])
+            return {
+                "mean": float(arr.mean()),
+                "median": float(np.median(arr)),
+                "p95": float(np.percentile(arr, 95)),
+            }
+
         return {
-            "mean": float(arr.mean()),
-            "median": float(np.median(arr)),
-            "p95": float(np.percentile(arr, 95)),
+            # `mean`/`median`/`p95` siguen siendo end-to-end por compatibilidad
+            # con los reportes ya generados; `inference` es la cifra citable.
+            **_stats(e2e_ms),
+            "inference": _stats(inference_ms),
+            "end_to_end": _stats(e2e_ms),
             "device": device,
-            "n_images": len(durations_ms),
+            "imgsz": getattr(model, "overrides", {}).get("imgsz"),
+            "batch": 1,
+            "warmup_iters": min(LATENCY_WARMUP, len(image_paths)),
+            "cuda_synchronized": on_cuda,
+            "n_images": len(e2e_ms),
+            "note": (
+                "`inference` excluye I/O y decodificacion; `end_to_end` las incluye. "
+                "Solo la primera es comparable entre modelos."
+            ),
         }
 
     def _copy_curve_plots(self, metrics: Any, output_path: Path) -> None:

@@ -1,0 +1,80 @@
+[
+  {
+    "model": "yolo11s",
+    "protocol": "coco",
+    "conf": 0.001,
+    "iou": 0.7,
+    "split": "test",
+    "map50": 0.9925107524054894,
+    "map50_95": 0.8640950150142318,
+    "precision": 0.9879196728046659,
+    "recall": 0.9601387063012518,
+    "f1": 0.9738310994679436,
+    "save_dir": "/home/kevin/pinv01-1159/runs/detect/reports/paper/val_runs/yolo11s_coco"
+  },
+  {
+    "model": "yolo11s",
+    "protocol": "pipeline",
+    "conf": 0.3,
+    "iou": 0.6,
+    "split": "test",
+    "map50": 0.9636526315789475,
+    "map50_95": 0.8392854398244807,
+    "precision": 0.9896386395565294,
+    "recall": 0.9678738346557639,
+    "f1": 0.9786352399889868,
+    "save_dir": "/home/kevin/pinv01-1159/runs/detect/reports/paper/val_runs/yolo11s_pipeline"
+  },
+  {
+    "model": "yolo12s",
+    "protocol": "coco",
+    "conf": 0.001,
+    "iou": 0.7,
+    "split": "test",
+    "map50": 0.9950000000000001,
+    "map50_95": 0.8788580078874025,
+    "precision": 0.9905338607677705,
+    "recall": 0.9976168194027492,
+    "f1": 0.9940627232590995,
+    "save_dir": "/home/kevin/pinv01-1159/runs/detect/reports/paper/val_runs/yolo12s_coco"
+  },
+  {
+    "model": "yolo12s",
+    "protocol": "pipeline",
+    "conf": 0.3,
+    "iou": 0.6,
+    "split": "test",
+    "map50": 0.9934210526315791,
+    "map50_95": 0.8775355457491508,
+    "precision": 1.0,
+    "recall": 0.9980506822612085,
+    "f1": 0.9990243902439024,
+    "save_dir": "/home/kevin/pinv01-1159/runs/detect/reports/paper/val_runs/yolo12s_pipeline"
+  },
+  {
+    "model": "yolo26s",
+    "protocol": "coco",
+    "conf": 0.001,
+    "iou": 0.7,
+    "split": "test",
+    "map50": 0.9946953666216826,
+    "map50_95": 0.8806905152939162,
+    "precision": 0.9895979277101941,
+    "recall": 0.9741675583930653,
+    "f1": 0.9818221206659763,
+    "save_dir": "/home/kevin/pinv01-1159/runs/detect/reports/paper/val_runs/yolo26s_coco"
+  },
+  {
+    "model": "yolo26s",
+    "protocol": "pipeline",
+    "conf": 0.3,
+    "iou": 0.6,
+    "split": "test",
+    "map50": 0.9890421052631581,
+    "map50_95": 0.87541704926519,
+    "precision": 0.9840415978631082,
+    "recall": 0.9936774628879893,
+    "f1": 0.9888360563906384,
+    "save_dir": "/home/kevin/pinv01-1159/runs/detect/reports/paper/val_runs/yolo26s_pipeline"
+  }
+]

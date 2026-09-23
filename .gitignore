@@ -150,6 +150,24 @@ datasets/
 *.tiff
 *.tif
 
+# Excepcion: las figuras citadas por el informe y los artefactos del entregable
+# se versionan, si no el .tex no compila desde un clone limpio.
+!informe/imagenes/
+!informe/imagenes/**
+!reports/paper/
+!reports/paper/**
+
+# Caches que Ultralytics deja dentro de datasets/ al evaluar; reaparecen solos.
+*.cache
+
+# Documentacion contractual: no pertenece a un repositorio publico.
+contrato.pdf
+
+# Configuracion local de agentes.
+.claude/
+
+
+
 # Logs
 logs/
 *.log

@@ -1,0 +1,162 @@
+{
+  "generado": "2026-09-23T22:59:51.759217+00:00",
+  "git": {
+    "commit": "a0bf83b402537b71a221a6851c5cbda2ad0ac764",
+    "branch": "main",
+    "arbol_limpio": false,
+    "aviso": "El arbol tenia cambios sin commitear al generar este archivo: el commit de arriba NO describe el estado que produjo los artefactos. Regenerar despues de commitear."
+  },
+  "checkpoints": {
+    "yolo11s_clean_best.pt": {
+      "sha256": "d330498eda7cda9dd9df74774bedf6c4958d45a79352557a1bdcdf4ab3768bf2",
+      "bytes": 19211674
+    },
+    "yolo12s_clean_best.pt": {
+      "sha256": "aa6398771758775c54c65cb356e2983bccb41ac8b72a422566379cb208df9ed5",
+      "bytes": 18966362
+    },
+    "yolo26s_clean_best.pt": {
+      "sha256": "fc6d6519d89001b99f4a569d271935707ed03ebffeb232d4ca56026c71058723",
+      "bytes": 20359621
+    }
+  },
+  "dataset": {
+    "split_report_sha256": "e3411bd3d35c7d36ddc533b199c496bb6a20d3f9d334082881f2bf5b303da156",
+    "regenerar_con": "uv run python tools/build_clean_split.py datasets/v9 datasets/clean",
+    "roboflow": "pinv011159/macroinvertebrados-split-limpio-kuhq3"
+  },
+  "artefactos": {
+    "audit_similarity.json": {
+      "sha256": "fe73a57f6cd9990bacb8bfc1abcf9b6cd61e7f8c63ebecd0777888dc2cf1b370",
+      "bytes": 16813,
+      "regenerar_con": "uv run python tools/audit_similarity.py"
+    },
+    "audit_splits.json": {
+      "sha256": "bfbadeea4ad4dde176cdac0dc0fb5907a638545a322867ee4b68930e40977163",
+      "bytes": 3081,
+      "regenerar_con": "uv run python tools/audit_splits.py"
+    },
+    "bbox_instances.csv": {
+      "sha256": "2bc7ec4045e6180443886d158af2ef9a20122f5f76636e6b0230802575aad9ec",
+      "bytes": 331714,
+      "regenerar_con": "uv run python tools/audit_bbox_dimensions.py"
+    },
+    "bbox_per_family.csv": {
+      "sha256": "a24e2e857ccf1d40cb227e8886539e93674a77fac2cf9cb92a4e2ea60945169c",
+      "bytes": 2850,
+      "regenerar_con": "uv run python tools/audit_bbox_dimensions.py"
+    },
+    "bbox_per_split.csv": {
+      "sha256": "f376770cdd69f1d6e11327f2d0aacce866cf942b35cb32ea2bdcf4015a14f8f5",
+      "bytes": 635,
+      "regenerar_con": "uv run python tools/audit_bbox_dimensions.py"
+    },
+    "bbox_summary.json": {
+      "sha256": "3e7c12b9daef8571e5852e6478687c759e59b71097aa896f1b7425ac22a65bb9",
+      "bytes": 18999,
+      "regenerar_con": "uv run python tools/audit_bbox_dimensions.py"
+    },
+    "bootstrap_grouped.json": {
+      "sha256": "742ae8d2849a4295272ccfb5ad7fe5ebaa273b4e91f1b2fcaffe456e9e2ab10d",
+      "bytes": 3768,
+      "regenerar_con": "uv run python tools/audit_sweep_and_bootstrap.py"
+    },
+    "confusion_yolo11s_abs.csv": {
+      "sha256": "ca6fd5299bc21dcafb7eaa1c51d89606bf4c66d469d52b70fcfe147e6898dd4c",
+      "bytes": 1339,
+      "regenerar_con": "uv run python tools/audit_eval_checkpoints.py"
+    },
+    "confusion_yolo11s_norm.csv": {
+      "sha256": "689d18924fdb971f3eee3a1f0a47ad647e26a818944ffc556e56bdd62f4b3eef",
+      "bytes": 2141,
+      "regenerar_con": "uv run python tools/audit_eval_checkpoints.py"
+    },
+    "confusion_yolo12s_abs.csv": {
+      "sha256": "f78350aeb77b0cde1e92f9da9162d6a411bbef6c87b4c479b61bbff379fdcc74",
+      "bytes": 1338,
+      "regenerar_con": "uv run python tools/audit_eval_checkpoints.py"
+    },
+    "confusion_yolo12s_norm.csv": {
+      "sha256": "3a99c1c28a674413ed2a920a70c3de5209334bdbc77dbed80e8cff66d8831e79",
+      "bytes": 2127,
+      "regenerar_con": "uv run python tools/audit_eval_checkpoints.py"
+    },
+    "confusion_yolo26s_abs.csv": {
+      "sha256": "dd1544d9de8f74dcd82410523d22627559d4ff4b1452580d5285a3b147d2928d",
+      "bytes": 1338,
+      "regenerar_con": "uv run python tools/audit_eval_checkpoints.py"
+    },
+    "confusion_yolo26s_norm.csv": {
+      "sha256": "9f998c25de7d5b311c59af17f9940d894f6b948a83030b6804ae5b5411e65c6e",
+      "bytes": 2155,
+      "regenerar_con": "uv run python tools/audit_eval_checkpoints.py"
+    },
+    "eval_overall.csv": {
+      "sha256": "f75f6cc1c2309c4c8364a661ffcf6ad0b2a83a177971f920c682509a1134c86f",
+      "bytes": 1252,
+      "regenerar_con": "uv run python tools/audit_eval_checkpoints.py"
+    },
+    "eval_overall.json": {
+      "sha256": "c4e423f485692953739a32389a6ce72b7ece6d7517c51bf460023370e25209db",
+      "bytes": 2241,
+      "regenerar_con": "uv run python tools/audit_eval_checkpoints.py"
+    },
+    "eval_per_class.csv": {
+      "sha256": "853e24d8bff736cbdbeb09d9a1eed28ee23ce6608eee5e18c395efafddad87b5",
+      "bytes": 9595,
+      "regenerar_con": "uv run python tools/audit_eval_checkpoints.py"
+    },
+    "family_size_vs_performance.csv": {
+      "sha256": "e346258ebdb9970f5cbf00ab4dd0947b710fa3d1e122b319f4672f2e8bc26ec9",
+      "bytes": 3471,
+      "regenerar_con": "uv run python tools/audit_size_vs_performance.py"
+    },
+    "groups_per_class.csv": {
+      "sha256": "3c614f6ab83c623d3ae27d0bdec7f3d35925913f0b537b7e73c5c454b182905f",
+      "bytes": 430,
+      "regenerar_con": "uv run python tools/audit_splits.py"
+    },
+    "threshold_sweep_valid.csv": {
+      "sha256": "5d3df47631db0ec4dd69c8a1737c568fec43034f362cea57a089ba62a9bd9b8b",
+      "bytes": 1231,
+      "regenerar_con": "uv run python tools/audit_sweep_and_bootstrap.py"
+    }
+  },
+  "figuras": {
+    "informe/imagenes/confusion_matrix_normalized.png": {
+      "sha256": "8bdb2e2dd36989f42182eede0e738fa01586c043b2a0d5db9e922e604f842b63",
+      "bytes": 329833,
+      "regenerar_con": "cp reports/paper/val_runs/yolo26s_coco/confusion_matrix_normalized.png"
+    },
+    "informe/imagenes/distribucion_tamanos_bbox.png": {
+      "sha256": "c5f9646e88df193725af442e8699b0e8a5dfa97e98b3ce9e25a8a25ecac1837d",
+      "bytes": 85720,
+      "regenerar_con": "uv run python tools/make_report_figures.py"
+    },
+    "informe/imagenes/ejemplo_dificil.png": {
+      "sha256": "cfa70ec0d14c4ed79fa1f3792ffaf4879786567d68e70ceade76b76a5ddf9067",
+      "bytes": 664388,
+      "regenerar_con": "uv run python tools/make_inference_examples.py"
+    },
+    "informe/imagenes/ejemplo_multiple.png": {
+      "sha256": "e7426903fb63b5246eccd4a226bc4464c1740e02bdeb758c58fe9901abc872fc",
+      "bytes": 841243,
+      "regenerar_con": "uv run python tools/make_inference_examples.py"
+    },
+    "informe/imagenes/ejemplo_simple.png": {
+      "sha256": "4ecfbee9432cc5952d849234a6ccb5818213e69e8ec6dad5698af3467a91a9e9",
+      "bytes": 821609,
+      "regenerar_con": "uv run python tools/make_inference_examples.py"
+    },
+    "informe/imagenes/elongacion_vs_map.png": {
+      "sha256": "9a826a981c450e853e73d0efe64693775fb5345ae4f725b440cf71bc9c563c00",
+      "bytes": 122403,
+      "regenerar_con": "uv run python tools/make_report_figures.py"
+    },
+    "informe/imagenes/pipeline_validacion.jpg": {
+      "sha256": "1f07bd92135b5b2f7fb1ee13e82cea95da317b7edcadb38bbe6ca42a2d9e537f",
+      "bytes": 822771,
+      "regenerar_con": "cp reports/paper/val_runs/yolo26s_coco/val_batch0_pred.jpg"
+    }
+  }
+}

@@ -13,6 +13,7 @@ Fecha: 2024
 """
 
 import argparse
+import hashlib
 import json
 import platform
 import subprocess
@@ -23,6 +24,7 @@ from pathlib import Path
 from config import config
 from data import DatasetManager
 from models import YOLOInference, YOLOTrainer
+from models.trainer import MAP_EVAL_CONF, MAP_EVAL_IOU
 from reports import DatasetReport, ModelReport
 from utils.logger import setup_logger
 
@@ -32,6 +34,8 @@ def _capture_environment_metadata(
     experiment_name: str,
     epochs: int,
     started_at: str,
+    train_kwargs: dict | None = None,
+    eval_summary: dict | None = None,
 ) -> dict:
     """Metadata de reproducibilidad para acompañar los resultados crudos:
     versiones, hardware, commit de código y config efectiva del run.
@@ -48,12 +52,23 @@ def _capture_environment_metadata(
 
     gpu_name = torch.cuda.get_device_name(0) if torch.cuda.is_available() else None
 
+    # Se guarda el hash del manifiesto, no su contenido: embeberlo duplicaba
+    # ~98 KB por experimento (el 99 % es el mapa imagen->especimen, identico en
+    # todos) y creaba copias que pueden divergir del original (auditoria S3).
     dataset_dir = Path(data_yaml_path).parent
     split_report_path = dataset_dir / "split_report.json"
-    split_report = None
+    split_report_ref = None
     if split_report_path.exists():
-        with open(split_report_path, encoding="utf-8") as f:
-            split_report = json.load(f)
+        raw = split_report_path.read_bytes()
+        summary = json.loads(raw)
+        split_report_ref = {
+            "path": str(split_report_path),
+            "sha256": hashlib.sha256(raw).hexdigest(),
+            "groups": summary.get("groups"),
+            "images": summary.get("images"),
+            "images_per_split": summary.get("images_per_split"),
+            "groups_per_split": summary.get("groups_per_split"),
+        }
 
     return {
         "experiment_name": experiment_name,
@@ -73,8 +88,15 @@ def _capture_environment_metadata(
             "workers": config.workers,
             "seed": config.seed,
         },
+        # Configuracion efectiva completa que recibio Ultralytics, augmentacion
+        # incluida. `config` de arriba es un resumen; esto es lo que de verdad
+        # hace falta para reproducir el entrenamiento.
+        "train_kwargs": train_kwargs or None,
+        # Metricas del modelo entrenado, para cerrar la cadena
+        # numero publicado -> artefacto -> commit -> config.
+        "eval_metrics": eval_summary or None,
         "data_yaml_path": str(data_yaml_path),
-        "dataset_split_report": split_report,
+        "dataset_split_report": split_report_ref,
     }
 
 
@@ -96,10 +118,14 @@ class MacroinvertebratePipeline:
 
         # Validar configuración
         if not config.validate():
-            self.logger.error("❌ Configuración inválida. Revisa tu archivo .env")
+            self.logger.error("Configuración inválida. Revisa tu archivo .env:")
+            for error in config.validation_errors():
+                self.logger.error(f"   - {error}")
             sys.exit(1)
+        for aviso in config.validation_errors():
+            self.logger.warning(f"{aviso}")
 
-        self.logger.info("✅ Pipeline inicializado correctamente")
+        self.logger.info("Pipeline inicializado correctamente")
         self.logger.info(str(config))
 
     def setup_dataset(self, version: int | None = None) -> str:
@@ -112,7 +138,7 @@ class MacroinvertebratePipeline:
         Returns:
             Ruta al archivo data.yaml
         """
-        self.logger.info("📥 Configurando dataset...")
+        self.logger.info("Configurando dataset...")
 
         try:
             # Configurar conexión con Roboflow
@@ -127,14 +153,14 @@ class MacroinvertebratePipeline:
             # Generar data.yaml
             data_yaml_path = self.dataset_manager.generate_data_yaml(dataset_info["location"])
 
-            self.logger.info("✅ Dataset configurado exitosamente")
+            self.logger.info("Dataset configurado exitosamente")
             self.logger.info(f"   - Ubicación: {dataset_info['location']}")
             self.logger.info(f"   - data.yaml: {data_yaml_path}")
 
             return data_yaml_path
 
         except Exception as e:
-            self.logger.error(f"❌ Error configurando dataset: {e}")
+            self.logger.error(f"Error configurando dataset: {e}")
             raise
 
     def train_model(self,
@@ -152,7 +178,7 @@ class MacroinvertebratePipeline:
         Returns:
             Ruta al modelo entrenado
         """
-        self.logger.info("🏋️ Iniciando entrenamiento del modelo...")
+        self.logger.info("Iniciando entrenamiento del modelo...")
         started_at = datetime.now(timezone.utc).isoformat()
 
         try:
@@ -173,12 +199,12 @@ class MacroinvertebratePipeline:
             )
 
             # Evaluar en el split de test (no val: ese ya se usó para elegir best.pt)
-            self.logger.info("📊 Evaluando modelo en el split de test...")
+            self.logger.info("Evaluando modelo en el split de test...")
             eval_metrics = self.trainer.evaluate(model_path, data_yaml_path)
 
             # Obtener resumen y persistirlo como registro del experimento
             summary = self.trainer.get_training_summary()
-            self.logger.info("📈 Resumen de evaluación (split de test):")
+            self.logger.info("Resumen de evaluación (split de test):")
             self.logger.info(f"   - mAP50: {summary['metrics']['map50']:.4f}")
             self.logger.info(f"   - Precisión: {summary['metrics']['precision']:.4f}")
             self.logger.info(f"   - Recall: {summary['metrics']['recall']:.4f}")
@@ -194,21 +220,32 @@ class MacroinvertebratePipeline:
                 experiment_name=experiment_name,
                 epochs=epochs or config.training_epochs,
                 started_at=started_at,
+                train_kwargs=getattr(self.trainer, "train_kwargs", None),
+                eval_summary=summary,
             )
             with open(results_dir / "environment.json", "w", encoding="utf-8") as f:
                 json.dump(env_metadata, f, indent=2, ensure_ascii=False)
-            self.logger.info(f"   - Metadata de entorno guardada en: {results_dir / 'environment.json'}")
+            env_path = results_dir / "environment.json"
+            self.logger.info(f"   - Metadata de entorno guardada en: {env_path}")
 
-            self.logger.info("📊 Generando reporte estadístico del modelo...")
+            self.logger.info("Generando reporte estadístico del modelo...")
             ModelReport(model_path, data_yaml_path).generate(
                 metrics=eval_metrics,
-                output_dir=results_dir / "model_report"
+                output_dir=results_dir / "model_report",
+                # Quien evaluó conoce el protocolo con certeza; deducirlo del
+                # objeto de métricas depende de la versión de Ultralytics.
+                protocol={
+                    "split": "test",
+                    "conf": MAP_EVAL_CONF,
+                    "iou": MAP_EVAL_IOU,
+                    "imgsz": config.img_size,
+                },
             )
 
             return model_path
 
         except Exception as e:
-            self.logger.error(f"❌ Error durante el entrenamiento: {e}")
+            self.logger.error(f"Error durante el entrenamiento: {e}")
             raise
 
     def run_complete_pipeline(self,
@@ -226,7 +263,7 @@ class MacroinvertebratePipeline:
         Returns:
             Ruta al modelo entrenado
         """
-        self.logger.info("🚀 Iniciando pipeline completo...")
+        self.logger.info("Iniciando pipeline completo...")
 
         try:
             # 1. Configurar dataset
@@ -239,12 +276,50 @@ class MacroinvertebratePipeline:
                 epochs=epochs
             )
 
-            self.logger.info("🎉 Pipeline completo finalizado exitosamente!")
+            self.logger.info("Pipeline completo finalizado exitosamente!")
             return model_path
 
         except Exception as e:
-            self.logger.error(f"❌ Error en pipeline completo: {e}")
+            self.logger.error(f"Error en pipeline completo: {e}")
             raise
+
+    def predict_site(self,
+                    images_dir: str,
+                    model_path: str,
+                    conf_threshold: float | None = None,
+                    iou_threshold: float | None = None,
+                    save_annotated: bool = True,
+                    output_dir: str = "results") -> dict:
+        """Procesa todas las fotografías de un sitio de muestreo.
+
+        Es el camino que el índice BMWP necesita: se define por sitio, no por
+        fotografía. Devuelve el registro agregado, con el índice, el ASPT y las
+        advertencias.
+        """
+        carpeta = Path(images_dir)
+        if not carpeta.is_dir():
+            raise NotADirectoryError(f"No es una carpeta: {images_dir}")
+        extensiones = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff"}
+        fotos = sorted(
+            f for f in carpeta.iterdir()
+            if f.is_file() and f.suffix.lower() in extensiones
+        )
+        if not fotos:
+            raise FileNotFoundError(f"No hay imágenes en {images_dir}")
+
+        self.logger.info(f"Procesando sitio: {len(fotos)} fotografías de {carpeta}")
+        self.inference = YOLOInference(model_path)
+        resultados = self.inference.predict_batch(
+            [str(f) for f in fotos],
+            conf_threshold=conf_threshold,
+            iou_threshold=iou_threshold,
+            save_annotated=save_annotated,
+            output_dir=output_dir,
+            calculate_bmwp=True,
+        )
+        salida = Path(output_dir) / f"sitio_{carpeta.name}.json"
+        self.inference.export_results(resultados, str(salida))
+        return resultados[-1]  # el registro con alcance="sitio"
 
     def predict_image(self,
                      image_path: str,
@@ -252,7 +327,8 @@ class MacroinvertebratePipeline:
                      conf_threshold: float | None = None,
                      iou_threshold: float | None = None,
                      save_annotated: bool = True,
-                     calculate_bmwp: bool = False) -> dict:
+                     calculate_bmwp: bool = False,
+                     output_dir: str = "results") -> dict:
         """
         Realiza predicción en una imagen.
 
@@ -263,11 +339,12 @@ class MacroinvertebratePipeline:
             iou_threshold: Umbral de IoU para NMS
             save_annotated: Si guardar imagen anotada
             calculate_bmwp: Si calcular el índice BMWP
+            output_dir: Directorio donde guardar la imagen anotada y el JSON
 
         Returns:
             Resultados de la predicción
         """
-        self.logger.info(f"🔍 Realizando predicción en: {image_path}")
+        self.logger.info(f"Realizando predicción en: {image_path}")
 
         try:
             # Inicializar inferencia
@@ -279,17 +356,20 @@ class MacroinvertebratePipeline:
                 conf_threshold=conf_threshold,
                 iou_threshold=iou_threshold,
                 save_annotated=save_annotated,
-                calculate_bmwp=calculate_bmwp
+                calculate_bmwp=calculate_bmwp,
+                output_dir=output_dir,
             )
 
             # Exportar resultados
-            output_file = f"results/prediction_{Path(image_path).stem}.json"
+            output_file = str(
+                Path(output_dir) / f"prediction_{Path(image_path).stem}.json"
+            )
             self.inference.export_results(results, output_file)
 
             return results
 
         except Exception as e:
-            self.logger.error(f"❌ Error durante la predicción: {e}")
+            self.logger.error(f"Error durante la predicción: {e}")
             raise
 
 
@@ -386,6 +466,13 @@ Ejemplos de uso:
     )
 
     parser.add_argument(
+        "--site",
+        type=str,
+        help=("Carpeta con las fotografías de un sitio de muestreo. Calcula el "
+              "índice BMWP del sitio, que es como se define el índice.")
+    )
+
+    parser.add_argument(
         "--image",
         type=str,
         help="Ruta a la imagen para predicción"
@@ -412,15 +499,20 @@ Ejemplos de uso:
     # Argumentos adicionales
     parser.add_argument(
         "--save-annotated",
-        action="store_true",
+        action=argparse.BooleanOptionalAction,
         default=True,
-        help="Guardar imagen anotada (por defecto: True)"
+        help="Guardar imagen anotada (por defecto: sí; usar --no-save-annotated)"
     )
 
+    # El default sale de ENABLE_BMWP: antes la variable se leia, se imprimia
+    # en el banner y no controlaba nada, con lo que el programa podia anunciar
+    # "BMWP: Habilitado: True" y dos lineas despues "Cálculo BMWP: False".
     parser.add_argument(
         "--calculate-bmwp",
-        action="store_true",
-        help="Calcular índice BMWP para evaluación de calidad del agua"
+        action=argparse.BooleanOptionalAction,
+        default=config.enable_bmwp,
+        help=("Calcular índice BMWP de calidad del agua "
+              f"(por defecto: {config.enable_bmwp}, vía ENABLE_BMWP)")
     )
 
     parser.add_argument(
@@ -443,17 +535,17 @@ Ejemplos de uso:
                 epochs=args.epochs,
                 experiment_name=args.experiment_name
             )
-            print(f"\n🎉 Pipeline completado! Modelo guardado en: {model_path}")
+            print(f"\nPipeline completado! Modelo guardado en: {model_path}")
 
         elif args.setup_dataset:
             # Solo configurar dataset
             data_yaml_path = pipeline.setup_dataset(version=args.dataset_version)
-            print(f"\n✅ Dataset configurado! data.yaml en: {data_yaml_path}")
+            print(f"\nDataset configurado! data.yaml en: {data_yaml_path}")
 
         elif args.train:
             # Solo entrenamiento
             if not args.data_yaml:
-                print("❌ Error: --data-yaml es requerido para entrenamiento")
+                print("Error: --data-yaml es requerido para entrenamiento")
                 sys.exit(1)
 
             model_path = pipeline.train_model(
@@ -461,12 +553,39 @@ Ejemplos de uso:
                 experiment_name=args.experiment_name,
                 epochs=args.epochs
             )
-            print(f"\n✅ Entrenamiento completado! Modelo guardado en: {model_path}")
+            print(f"\nEntrenamiento completado! Modelo guardado en: {model_path}")
+
+        elif args.site:
+            if not args.model:
+                print("Error: --model es requerido para --site")
+                sys.exit(1)
+
+            sitio = pipeline.predict_site(
+                images_dir=args.site,
+                model_path=args.model,
+                conf_threshold=args.confidence,
+                iou_threshold=args.iou,
+                save_annotated=args.save_annotated,
+                output_dir=args.output_dir,
+            )
+
+            print(f"\nSitio procesado: {sitio['n_imagenes']} fotografías")
+            print(f"\nÍndice BMWP del sitio: {sitio['bmwp_total']}")
+            print(f"   - ASPT: {sitio['aspt']}")
+            print(f"   - Familias con puntaje: {sitio['n_familias_puntuadas']}")
+            print(f"   - Calidad del agua: {sitio['calidad_agua']}")
+            if sitio['familias']:
+                print("   - Familias encontradas:")
+                for f in sitio['familias']:
+                    marca = " (provisional)" if f.get("procedencia") == "proximidad" else ""
+                    print(f"     * {f['familia']:18} BMWP {f['bmwp_individual']}{marca}")
+            for aviso in sitio.get('advertencias', []):
+                print(f"    {aviso}")
 
         elif args.predict:
             # Solo predicción
             if not args.image or not args.model:
-                print("❌ Error: --image y --model son requeridos para predicción")
+                print("Error: --image y --model son requeridos para predicción")
                 sys.exit(1)
 
             results = pipeline.predict_image(
@@ -475,10 +594,11 @@ Ejemplos de uso:
                 conf_threshold=args.confidence,
                 iou_threshold=args.iou,
                 save_annotated=args.save_annotated,
-                calculate_bmwp=args.calculate_bmwp
+                calculate_bmwp=args.calculate_bmwp,
+                output_dir=args.output_dir,
             )
 
-            print("\n🔍 Predicción completada!")
+            print("\nPredicción completada!")
             print(f"   - Total detecciones: {results['total_detecciones']}")
             print(f"   - Familias detectadas: {results['familias_detectadas']}")
 
@@ -490,39 +610,47 @@ Ejemplos de uso:
 
             # Mostrar resultados BMWP si se calculó
             if args.calculate_bmwp and 'bmwp_total' in results:
-                print("\n🌊 Evaluación de Calidad del Agua (BMWP):")
-                print(f"   - Puntaje total: {results['bmwp_total']}")
-                print(f"   - Calidad del agua: {results['calidad_agua']}")
-                print(f"   - Confianza: {results['confianza']:.3f}")
+                parcial = results.get('parcial', False)
+                titulo = "Aporte BMWP de esta imagen" if parcial else "Índice BMWP del sitio"
+                print(f"\n{titulo}:")
+                print(f"   - Puntaje: {results['bmwp_total']}")
+                print(f"   - ASPT: {results.get('aspt', 0.0)}")
+                # La clase de calidad solo se enuncia a nivel de sitio: ponerla
+                # bajo una foto suelta convierte un dato parcial en un veredicto
+                # ambiental que nadie midió.
+                if not parcial:
+                    print(f"   - Calidad del agua: {results['calidad_agua']}")
 
-                if results['detalles_familias']:
-                    print("   - Detalles por familia:")
-                    for det in results['detalles_familias']:
-                        print(f"     * {det['familia']}: {det['cantidad']} (BMWP: {det['bmwp']})")
+                for det in results.get('familias', []):
+                    marca = " (provisional)" if det.get("procedencia") == "proximidad" else ""
+                    print(f"     * {det['familia']}: BMWP {det['bmwp_individual']}{marca}")
+
+                for aviso in results.get('advertencias', []):
+                    print(f"    {aviso}")
 
         elif args.dataset_report:
             if not args.data_yaml:
-                print("❌ Error: --data-yaml es requerido para --dataset-report")
+                print("Error: --data-yaml es requerido para --dataset-report")
                 sys.exit(1)
             DatasetReport(args.data_yaml).generate()
-            print("\n✅ Reporte de dataset generado en: results/dataset_report/")
+            print("\nReporte de dataset generado en: results/dataset_report/")
 
         elif args.model_report:
             if not args.model or not args.data_yaml:
-                print("❌ Error: --model y --data-yaml son requeridos para --model-report")
+                print("Error: --model y --data-yaml son requeridos para --model-report")
                 sys.exit(1)
             ModelReport(args.model, args.data_yaml).generate()
-            print("\n✅ Reporte de modelo generado en: results/model_report/")
+            print("\nReporte de modelo generado en: results/model_report/")
 
         else:
             # Mostrar ayuda si no se especifican argumentos
             parser.print_help()
 
     except KeyboardInterrupt:
-        print("\n⚠️ Operación cancelada por el usuario")
+        print("\nOperación cancelada por el usuario")
         sys.exit(1)
     except Exception as e:
-        print(f"\n❌ Error: {e}")
+        print(f"\nError: {e}")
         sys.exit(1)
 
 

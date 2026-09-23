@@ -1,0 +1,68 @@
+\usepackage{graphicx}
+\usepackage[a4paper, margin=2cm, top=3.2cm, headheight=100pt]{geometry}
+\usepackage[spanish]{babel}
+\usepackage{fancyhdr}
+\usepackage{authblk}
+\usepackage{etoolbox}
+\usepackage{orcidlink}
+\usepackage{url}
+\usepackage{titlesec}
+\usepackage{amsmath}
+\usepackage{subcaption} 
+\usepackage{flushend}
+
+
+% ----------------- vvvv no modificar vvvv  ------------------------
+% ----------------- vvvv no modificar vvvv  ------------------------
+% ----------------- vvvv no modificar vvvv  ------------------------
+\fancypagestyle{firstpagestyle}{
+    \fancyhf{} 
+    \renewcommand{\headrulewidth}{0.4pt}
+    \renewcommand{\footrulewidth}{0.4pt}
+    \fancyhead[L]{\includegraphics[height=1.8cm]{imagenes/logosrl.png}}
+    \fancyfoot[L]{\textit{\small ArtICS Lab S.R.L.}}
+}
+
+\fancypagestyle{normalpagestyle}{
+    \fancyhf{}
+    \renewcommand{\headrulewidth}{0.4pt}
+    \renewcommand{\footrulewidth}{0.4pt}
+    \fancyhead[L]{\textit{\small PINV01-1159}}
+    \fancyhead[R]{\textit{\small \thepage}}
+    \fancyfoot[L]{\textit{\small ArtICS Lab S.R.L.}}
+}
+
+\pagestyle{normalpagestyle}
+
+\makeatletter
+\renewcommand{\maketitle}{
+    \begin{flushleft}
+        {\huge \@title \par}
+        \vskip 0.5em
+        {\large \@author \par}
+        \vskip 0.5em
+        {\large \@date \par}
+    \end{flushleft}
+    \vspace{0.5cm}
+}
+\makeatother
+% ----------------- ^^^^  no modificar ^^^^  ----------------------------
+% ----------------- ^^^^  no modificar ^^^^  ----------------------------
+% ----------------- ^^^^  no modificar ^^^^  ----------------------------
+
+\renewenvironment{abstract}
+ {
+ \par\noindent\small
+  \rule{\textwidth}{0.4pt}\vspace{0.4em}
+  \textbf{Resumen}\par\nobreak\vspace{0.3em}\noindent\ignorespaces}
+ {\par\noindent\rule{\textwidth}{0.4pt}\par\vskip 1em}
+
+\newcommand{\keywords}[1]{\par\vspace{0.5em}\noindent\small\textbf{Palabras clave:} #1}
+
+\renewcommand{\thesection}{\arabic{section}}
+\renewcommand{\thesubsection}{\thesection.\arabic{subsection}}
+\renewcommand{\thesubsubsection}{\thesubsection.\arabic{subsubsection}}
+
+\titleformat{\section}[block]{\fontsize{12}{16}\selectfont\bfseries}{\thesection.}{0.5em}{}
+\titleformat{\subsection}[block]{\normalsize\bfseries}{\thesubsection}{0.3em}{}
+\titleformat{\subsubsection}[block]{\normalsize\itshape}{\thesubsubsection}{0.3em}{}

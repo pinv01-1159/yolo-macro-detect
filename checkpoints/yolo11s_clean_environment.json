@@ -1,4 +1,9 @@
 {
+  "_OBSOLETO": {
+    "aviso": "Este archivo registra la corrida de AGOSTO 2026 (patience=30, parada temprana en 156/188/174 epocas). Los pesos que lo acompanan son de un reentrenamiento posterior (2026-09-23, patience=epochs, 200 epocas). NO describe el .pt de al lado.",
+    "usar_en_su_lugar": "yolo11s_clean_train_args.json",
+    "marcado_el": "2026-09-23"
+  },
   "experiment_name": "yolo11s_clean",
   "started_at": "2026-08-09T17:30:39-03:00",
   "finished_at": "2026-08-09T22:31:39.128551+00:00",

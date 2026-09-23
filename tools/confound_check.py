@@ -56,7 +56,7 @@ def main() -> None:
     print(f"  azar: {chance:.1%} | clase mayoritaria: {majority:.1%} | "
           f"ratio vs azar: {acc / chance:.1f}x")
     if acc > 3 * chance:
-        print("  ⚠️  CONFUSOR DE SESIÓN: el fondo predice la clase. Reportalo como "
+        print("   CONFUSOR DE SESIÓN: el fondo predice la clase. Reportalo como "
               "limitación y capturá cada familia en varias sesiones/fondos.")
 
 
