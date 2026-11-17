@@ -77,7 +77,9 @@ results = model.predict("imagen.jpg")
 
 Estos modelos tienen un confusor de sesión sin resolver — ver
 [README §Limitaciones y Fuga de Datos](../README.md#-limitaciones-y-fuga-de-datos). En
-particular, predicen la familia correcta en ~16% de los casos usando *solo* el fondo, sin
-el organismo visible, concentrado en Chironomidae, Hydrophilidae, Planorbidae y
-Glossiphoniidae. No están validados para generalizar fuera de las condiciones fotográficas
+particular, la sesión fotográfica es predictiva de la familia (un clasificador sobre
+miniaturas de 32×32 acierta el 39,5 % sin ver caracteres del organismo). La ablación con
+criterio refinado (noviembre de 2026) muestra que con el organismo tapado los modelos no
+detectan sobre esa zona (0–1 de 458 instancias), pero eso no descarta que el contexto
+influya cuando el organismo está presente. No están validados para generalizar fuera de las condiciones fotográficas
 de este laboratorio.

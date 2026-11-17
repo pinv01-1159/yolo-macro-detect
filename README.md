@@ -224,6 +224,7 @@ uv run main.py --predict \
 
 ### 4. Inferencia
 - Carga del modelo entrenado
+- Margen gris de 16 px alrededor de cada imagen (`BORDER_PX` en [`models/inference.py`](models/inference.py)): los organismos tocan el borde del encuadre y el margen, elegido sobre validación, sube el mAP@0.5:0.95 de validación de 0.813 a 0.892 en YOLO26s. Es el mismo acondicionamiento que aplica `val()`, así que las métricas de este README corresponden a la inferencia real. Quien use el endpoint de Roboflow debe agregar el margen antes de enviar la imagen (`pad_border` / `unpad_detections`).
 - Predicción en imágenes nuevas
 - Anotación automática
 - Cálculo de índice BMWP (opcional)
@@ -381,37 +382,23 @@ python tools/build_clean_split.py datasets/v9 datasets/clean
 
 **Medición del confusor puro** ([`tools/confound_check.py`](tools/confound_check.py)): un clasificador de centroide más cercano sobre miniaturas 32×32 en gris —sin ver al bicho, del tamaño de un emoji— alcanza **39.5% de accuracy en test** (azar: 5.3%; clase mayoritaria: 7.8%) usando *solo* fondo/iluminación.
 
-**Medición sobre los modelos reales** ([`tools/background_ablation.py`](tools/background_ablation.py)), dos experimentos por instancia de test:
+**Medición sobre los modelos reales** ([`tools/background_ablation.py`](tools/background_ablation.py)). Dos brazos por instancia de test: *solo organismo* (recorte a la caja GT con 15 % de margen) y *solo fondo* (organismo tapado con relleno gris, resto de la imagen intacto).
 
-- **Solo el bicho** (recorte ajustado a la caja GT, sin nada de fondo): 97.6-99.8% de accuracy en los tres modelos — el modelo generaliza sobre morfología real en la gran mayoría de los casos.
-- **Solo el fondo** (bicho tapado con relleno gris, resto de la imagen intacto): el modelo predice la clase correcta *donde debería estar el bicho* en **~16% de las instancias**, sin que haya ningún animal visible. No está distribuido parejo — se concentra en clases puntuales:
+**Análisis refinado (noviembre de 2026).** El criterio inicial contaba como atajo cualquier detección de la clase correcta cercana a la caja tapada, y con ese criterio daba ~16 %. El refinamiento aísla la zona tapada: en las 51 imágenes de test con varios ejemplares (139 instancias, siempre de una sola familia), los demás ejemplares siguen visibles, y una detección sobre ellos no indica uso del fondo. Excluyéndolas (IoU ≥ 0,3 con otra caja anotada), el resultado sobre las 458 instancias, con IC 95 % por bootstrap agrupado por espécimen (2 000 réplicas), es:
 
-| Clase | Tasa de atajo por fondo (bicho tapado) |
-|-------|------------------------------------------|
-| Chironomidae | 76-84% |
-| Hydrophilidae | 58% |
-| Planorbidae | 47% |
-| Glossiphoniidae | 36% |
-| Dytiscidae | 21-25% |
-| resto (14 clases) | ≤8% |
+| Modelo | Imagen completa | Solo organismo | Detección sobre la zona tapada |
+|--------|-----------------|----------------|--------------------------------|
+| YOLO11s | 96,5 % | 99,1 % [98,1–100] | 0,2 % [0–0,7] (1/458) |
+| YOLO12s | 99,8 % | 100 % | 0 % (0/458) |
+| YOLO26s | 98,0 % | 98,5 % [95,7–100] | 0 % (0/458) |
 
-> **Aviso metodológico sobre esta tabla.** El experimento asume que la caja del
-> organismo es chica respecto de la imagen, y en este conjunto no lo es: la caja
-> mediana ocupa el 52.6 % del cuadro y el 11.9 % de las instancias supera el 90 %.
-> Para esas, "solo fondo" borra casi toda la imagen y "solo bicho" con 15 % de
-> margen devuelve prácticamente la foto original —con su fondo—, así que el brazo
-> "sin contexto" sí tiene contexto. Parte del gradiente entre familias puede
-> reflejar **cuánto fondo quedó sin tapar** antes que cuánto depende cada familia
-> del contexto: es un confusor del instrumento de medición.
->
-> `tools/background_ablation.py` ahora reporta además el subconjunto con
-> `area_frac < 0.40`, que es donde la pregunta es interpretable. **Las cifras de
-> arriba son previas a esa corrección y deben releerse con el experimento
-> re-ejecutado antes de citarse en una publicación.**
+Del criterio inicial, 72 de los 74 casos de YOLO26s tienen IoU ≥ 0,5 con otro ejemplar real de la misma familia, y ninguno IoU ≥ 0,3 con la caja tapada. El gradiente por familia que daba el criterio inicial (Chironomidae, Planorbidae, Hydrophilidae, Glossiphoniidae) sigue a cuántos ejemplares por foto tiene cada familia.
+
+**Qué se puede afirmar:** la clasificación se apoya en la región del organismo, y los modelos no generan detecciones a partir del contexto. **Qué no:** que el contexto de sesión no influya cuando el organismo está presente (el clasificador de miniaturas sí muestra que la sesión es predictiva). Además, el gris 114 es el relleno que Ultralytics usa al redimensionar, así que el brazo *solo fondo* mide la propensión a detectar sobre una región neutra. La prueba que separa ambos efectos es evaluar en sesiones no vistas, o pegar el organismo sobre fondos de otras sesiones. Reproducible: [`tools/ablation_raw.py`](tools/ablation_raw.py) genera las detecciones crudas por instancia (`reports/paper/ablation/raw_*.json`) y [`tools/ablation_analyze.py`](tools/ablation_analyze.py) calcula los criterios inicial y refinado con sus IC (`reports/paper/ablation/summary_*.json`).
 
 ### 3. Tres intentos de mitigación, mismo resultado nulo
 
-Se probaron tres técnicas de la literatura para reducir el atajo por fondo, sin tocar el split ni bajar la augmentación existente:
+Se probaron tres técnicas de la literatura para reducir el atajo por fondo, sin tocar el split ni bajar la augmentación existente. La tasa de la tabla se midió con el criterio inicial de la ablación (ver arriba), que incluye las detecciones sobre otros ejemplares visibles; con el criterio refinado, el punto de partida ya es ≈0 %, así que estas intervenciones no tenían margen medible:
 
 | Técnica | Mecanismo | Resultado (tasa de atajo agregada) |
 |---------|-----------|--------------------------------------|
@@ -420,13 +407,13 @@ Se probaron tres técnicas de la literatura para reducir el atajo por fondo, sin
 | Copy-paste augmentation 3x (79% del train sintético) | igual, con más volumen | 0.162 |
 | Regularización por atención λ=1.0 (3 arquitecturas, [`models/attention_regularization.py`](models/attention_regularization.py)) | penaliza en la función de pérdida la activación fuera de la caja GT (estilo "Right for the Right Reasons", Ross et al. 2017) | 0.157 – 0.159 |
 
-**Ocho corridas independientes, tres arquitecturas, tres mecanismos de intervención — rango de 0.157 a 0.166.** Esa estabilidad tan extrema sugiere que la correlación fondo↔clase en los datos de entrenamiento es lo bastante limpia como para que cualquier modelo razonablemente entrenado la encuentre y la use, sin importar cómo se penalice internamente: mientras la señal exista en los píxeles de entrada, el descenso de gradiente tiene incentivo genuino para explotarla. Ninguna técnica que dejamos de probar tocó la distribución de entrada en sí misma de forma suficientemente agresiva.
+**Ocho corridas independientes, tres arquitecturas, tres mecanismos de intervención: rango de 0.157 a 0.166 con el criterio inicial.** El análisis refinado explica esa estabilidad: el criterio inicial medía sobre todo los otros ejemplares visibles en las fotos con varios organismos, una propiedad del conjunto de test que ninguna intervención de entrenamiento podía cambiar.
 
 ### Qué hace falta para arreglarlo de verdad
 
 Ninguna intervención de entrenamiento va a resolver esto — es un problema de qué fotos existen, no de cómo se entrena con ellas. La mitigación real es de captura: fotografiar cada familia en **≥3 sesiones distintas** (fondo/bandeja/iluminación diferentes) y reservar una sesión completa como test *out-of-session*. Ese es el número que hay que reportar para afirmar generalización real, y hoy no existe en este dataset.
 
-**Consecuencia práctica:** un mAP alto acá no demuestra que el sistema vaya a funcionar identificando macroinvertebrados en un arroyo nuevo, fuera de las condiciones fotográficas de este laboratorio. Cualquier paper basado en este proyecto tiene que reportar el número agregado, la tabla de atajo por clase, y esta limitación explícitamente — no como nota al pie.
+**Consecuencia práctica:** un mAP alto acá no demuestra que el sistema vaya a funcionar identificando macroinvertebrados en un arroyo nuevo, fuera de las condiciones fotográficas de este laboratorio. Cualquier paper basado en este proyecto tiene que reportar el número agregado, la medición del confusor de sesión (clasificador de miniaturas, 39,5 %), la ablación con el criterio refinado y esta limitación explícitamente, no como nota al pie.
 
 ## Estructura del Proyecto
 

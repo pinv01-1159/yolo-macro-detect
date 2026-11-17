@@ -1,0 +1,742 @@
+{
+ "model": "checkpoints/yolo11s_clean_best.pt",
+ "conf": 0.3,
+ "seconds": 16.908464908599854,
+ "all": {
+  "n": 458,
+  "n_specimens": 87,
+  "n_images": 370,
+  "full_hit": 0.9650655021834061,
+  "crop_acc": 0.9912663755458515,
+  "crop_nodet": 0.002183406113537118,
+  "bg_shortcut_orig": 0.15938864628820962,
+  "bg_anydet_orig": 0.16375545851528384,
+  "bg_shortcut_clean": 0.002183406113537118,
+  "bg_anydet_clean": 0.002183406113537118,
+  "bg_chance_orig": 0.02809315866084425,
+  "bg_chance_clean": 0.002183406113537118,
+  "crop_chance_uniform": 0.05263157894736842,
+  "crop_chance_majority": 0.07423580786026202,
+  "frac_multi_instance": 0.3034934497816594,
+  "ci95_cluster": {
+   "full_hit": [
+    0.9135154575373682,
+    0.9977932158882684
+   ],
+   "crop_acc": [
+    0.980517363071711,
+    1.0
+   ],
+   "bg_shortcut_orig": [
+    0.07964411456846512,
+    0.24740612006237006
+   ],
+   "bg_shortcut_clean": [
+    0.0,
+    0.0069605568445475635
+   ],
+   "bg_chance_clean": [
+    0.0,
+    0.0069605568445475635
+   ],
+   "bg_excess_clean": [
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "small_lt_0.40": {
+  "n": 161,
+  "n_specimens": 34,
+  "n_images": 87,
+  "full_hit": 0.9937888198757764,
+  "crop_acc": 0.9937888198757764,
+  "crop_nodet": 0.0,
+  "bg_shortcut_orig": 0.36024844720496896,
+  "bg_anydet_orig": 0.36024844720496896,
+  "bg_shortcut_clean": 0.0,
+  "bg_anydet_clean": 0.0,
+  "bg_chance_orig": 0.069608053116299,
+  "bg_chance_clean": 0.0,
+  "crop_chance_uniform": 0.05263157894736842,
+  "crop_chance_majority": 0.18633540372670807,
+  "frac_multi_instance": 0.7577639751552795,
+  "ci95_cluster": {
+   "full_hit": [
+    0.9787078738934617,
+    1.0
+   ],
+   "crop_acc": [
+    0.9787234042553191,
+    1.0
+   ],
+   "bg_shortcut_orig": [
+    0.2025786054066597,
+    0.5310497599301613
+   ],
+   "bg_shortcut_clean": [
+    0.0,
+    0.0
+   ],
+   "bg_chance_clean": [
+    0.0,
+    0.0
+   ],
+   "bg_excess_clean": [
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "small_lt_0.40_single_instance": {
+  "n": 39,
+  "n_specimens": 16,
+  "n_images": 39,
+  "full_hit": 1.0,
+  "crop_acc": 1.0,
+  "crop_nodet": 0.0,
+  "bg_shortcut_orig": 0.0,
+  "bg_anydet_orig": 0.0,
+  "bg_shortcut_clean": 0.0,
+  "bg_anydet_clean": 0.0,
+  "bg_chance_orig": 0.0,
+  "bg_chance_clean": 0.0,
+  "crop_chance_uniform": 0.05263157894736842,
+  "crop_chance_majority": 0.23076923076923078,
+  "frac_multi_instance": 0.0,
+  "ci95_cluster": {
+   "full_hit": [
+    1.0,
+    1.0
+   ],
+   "crop_acc": [
+    1.0,
+    1.0
+   ],
+   "bg_shortcut_orig": [
+    0.0,
+    0.0
+   ],
+   "bg_shortcut_clean": [
+    0.0,
+    0.0
+   ],
+   "bg_chance_clean": [
+    0.0,
+    0.0
+   ],
+   "bg_excess_clean": [
+    0.0,
+    0.0
+   ]
+  }
+ },
+ "per_family": {
+  "Ampullariidae": {
+   "all": {
+    "n": 31,
+    "n_specimens": 4,
+    "n_images": 15,
+    "full_hit": 1.0,
+    "crop_acc": 1.0,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 0.0,
+    "bg_anydet_orig": 0.0,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 0.0,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 0.7741935483870968
+   },
+   "small": {
+    "n": 24,
+    "n_specimens": 2,
+    "n_images": 8,
+    "full_hit": 1.0,
+    "crop_acc": 1.0,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 0.0,
+    "bg_anydet_orig": 0.0,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 0.0,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 1.0
+   },
+   "median_area": 0.15399169921875
+  },
+  "Ancylidae": {
+   "all": {
+    "n": 24,
+    "n_specimens": 4,
+    "n_images": 24,
+    "full_hit": 0.4583333333333333,
+    "crop_acc": 0.9166666666666666,
+    "crop_nodet": 0.041666666666666664,
+    "bg_shortcut_orig": 0.0,
+    "bg_anydet_orig": 0.0,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 0.0,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 0.0
+   },
+   "small": {
+    "n": 0
+   },
+   "median_area": 0.532408447265625
+  },
+  "Belostomatidae": {
+   "all": {
+    "n": 19,
+    "n_specimens": 5,
+    "n_images": 19,
+    "full_hit": 1.0,
+    "crop_acc": 1.0,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 0.0,
+    "bg_anydet_orig": 0.0,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 0.0,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 0.0
+   },
+   "small": {
+    "n": 0
+   },
+   "median_area": 0.85
+  },
+  "Ceratopogonidae": {
+   "all": {
+    "n": 27,
+    "n_specimens": 4,
+    "n_images": 27,
+    "full_hit": 1.0,
+    "crop_acc": 1.0,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 0.0,
+    "bg_anydet_orig": 0.0,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 0.0,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 0.0
+   },
+   "small": {
+    "n": 8,
+    "n_specimens": 2,
+    "n_images": 8,
+    "full_hit": 1.0,
+    "crop_acc": 1.0,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 0.0,
+    "bg_anydet_orig": 0.0,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 0.0,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 0.0
+   },
+   "median_area": 0.562972412109375
+  },
+  "Chironomidae": {
+   "all": {
+    "n": 25,
+    "n_specimens": 7,
+    "n_images": 11,
+    "full_hit": 0.92,
+    "crop_acc": 1.0,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 0.76,
+    "bg_anydet_orig": 0.84,
+    "bg_shortcut_clean": 0.04,
+    "bg_anydet_clean": 0.04,
+    "bg_chance_orig": 0.76,
+    "bg_chance_clean": 0.04,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 0.84
+   },
+   "small": {
+    "n": 19,
+    "n_specimens": 6,
+    "n_images": 9,
+    "full_hit": 0.9473684210526315,
+    "crop_acc": 1.0,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 0.8421052631578947,
+    "bg_anydet_orig": 0.8421052631578947,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 0.8421052631578947,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 0.8421052631578947
+   },
+   "median_area": 0.290810546875
+  },
+  "Coenagrionidae": {
+   "all": {
+    "n": 26,
+    "n_specimens": 6,
+    "n_images": 25,
+    "full_hit": 0.9615384615384616,
+    "crop_acc": 0.9615384615384616,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 0.07692307692307693,
+    "bg_anydet_orig": 0.07692307692307693,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 0.07692307692307693,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 0.07692307692307693
+   },
+   "small": {
+    "n": 0
+   },
+   "median_area": 0.6806030912422839
+  },
+  "Dytiscidae": {
+   "all": {
+    "n": 24,
+    "n_specimens": 6,
+    "n_images": 21,
+    "full_hit": 1.0,
+    "crop_acc": 1.0,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 0.25,
+    "bg_anydet_orig": 0.25,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 0.25,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 0.25
+   },
+   "small": {
+    "n": 4,
+    "n_specimens": 2,
+    "n_images": 2,
+    "full_hit": 1.0,
+    "crop_acc": 1.0,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 1.0,
+    "bg_anydet_orig": 1.0,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 1.0,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 1.0
+   },
+   "median_area": 0.90406494140625
+  },
+  "Gerridae": {
+   "all": {
+    "n": 20,
+    "n_specimens": 6,
+    "n_images": 20,
+    "full_hit": 1.0,
+    "crop_acc": 1.0,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 0.0,
+    "bg_anydet_orig": 0.0,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 0.0,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 0.0
+   },
+   "small": {
+    "n": 0
+   },
+   "median_area": 0.870726318359375
+  },
+  "Glossiphoniidae": {
+   "all": {
+    "n": 22,
+    "n_specimens": 3,
+    "n_images": 18,
+    "full_hit": 1.0,
+    "crop_acc": 1.0,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 0.36363636363636365,
+    "bg_anydet_orig": 0.36363636363636365,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 0.36363636363636365,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 0.36363636363636365
+   },
+   "small": {
+    "n": 8,
+    "n_specimens": 1,
+    "n_images": 4,
+    "full_hit": 1.0,
+    "crop_acc": 1.0,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 1.0,
+    "bg_anydet_orig": 1.0,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 1.0,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 1.0
+   },
+   "median_area": 0.49244384765625
+  },
+  "Hirudinidae": {
+   "all": {
+    "n": 17,
+    "n_specimens": 3,
+    "n_images": 17,
+    "full_hit": 1.0,
+    "crop_acc": 1.0,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 0.0,
+    "bg_anydet_orig": 0.0,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 0.0,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 0.0
+   },
+   "small": {
+    "n": 3,
+    "n_specimens": 3,
+    "n_images": 3,
+    "full_hit": 1.0,
+    "crop_acc": 1.0,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 0.0,
+    "bg_anydet_orig": 0.0,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 0.0,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 0.0
+   },
+   "median_area": 0.5190270996093751
+  },
+  "Hydrophilidae": {
+   "all": {
+    "n": 24,
+    "n_specimens": 4,
+    "n_images": 17,
+    "full_hit": 1.0,
+    "crop_acc": 1.0,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 0.5833333333333334,
+    "bg_anydet_orig": 0.5833333333333334,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 0.5833333333333334,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 0.5833333333333334
+   },
+   "small": {
+    "n": 7,
+    "n_specimens": 2,
+    "n_images": 7,
+    "full_hit": 1.0,
+    "crop_acc": 1.0,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 1.0,
+    "bg_anydet_orig": 1.0,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 1.0,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 1.0
+   },
+   "median_area": 0.5300079345703126
+  },
+  "Hyriidae": {
+   "all": {
+    "n": 34,
+    "n_specimens": 5,
+    "n_images": 29,
+    "full_hit": 1.0,
+    "crop_acc": 1.0,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 0.17647058823529413,
+    "bg_anydet_orig": 0.17647058823529413,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 0.17647058823529413,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 0.29411764705882354
+   },
+   "small": {
+    "n": 19,
+    "n_specimens": 5,
+    "n_images": 14,
+    "full_hit": 1.0,
+    "crop_acc": 1.0,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 0.3157894736842105,
+    "bg_anydet_orig": 0.3157894736842105,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 0.3157894736842105,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 0.5263157894736842
+   },
+   "median_area": 0.3930886840820313
+  },
+  "Libellulidae": {
+   "all": {
+    "n": 28,
+    "n_specimens": 6,
+    "n_images": 28,
+    "full_hit": 1.0,
+    "crop_acc": 1.0,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 0.0,
+    "bg_anydet_orig": 0.0,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 0.0,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 0.0
+   },
+   "small": {
+    "n": 0
+   },
+   "median_area": 0.8668603515625
+  },
+  "Miridae": {
+   "all": {
+    "n": 17,
+    "n_specimens": 4,
+    "n_images": 17,
+    "full_hit": 1.0,
+    "crop_acc": 1.0,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 0.0,
+    "bg_anydet_orig": 0.0,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 0.0,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 0.0
+   },
+   "small": {
+    "n": 0
+   },
+   "median_area": 0.7552001953125
+  },
+  "Noteridae": {
+   "all": {
+    "n": 26,
+    "n_specimens": 5,
+    "n_images": 20,
+    "full_hit": 1.0,
+    "crop_acc": 0.9615384615384616,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 0.07692307692307693,
+    "bg_anydet_orig": 0.07692307692307693,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 0.07692307692307693,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 0.3076923076923077
+   },
+   "small": {
+    "n": 12,
+    "n_specimens": 2,
+    "n_images": 6,
+    "full_hit": 1.0,
+    "crop_acc": 0.9166666666666666,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 0.16666666666666666,
+    "bg_anydet_orig": 0.16666666666666666,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 0.16666666666666666,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 0.6666666666666666
+   },
+   "median_area": 0.4839346694423011
+  },
+  "Notonectidae": {
+   "all": {
+    "n": 16,
+    "n_specimens": 3,
+    "n_images": 16,
+    "full_hit": 1.0,
+    "crop_acc": 1.0,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 0.0,
+    "bg_anydet_orig": 0.0,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 0.0,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 0.0
+   },
+   "small": {
+    "n": 0
+   },
+   "median_area": 0.64941162109375
+  },
+  "Physidae": {
+   "all": {
+    "n": 25,
+    "n_specimens": 4,
+    "n_images": 14,
+    "full_hit": 1.0,
+    "crop_acc": 1.0,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 0.04,
+    "bg_anydet_orig": 0.04,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 0.04,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 0.64
+   },
+   "small": {
+    "n": 18,
+    "n_specimens": 4,
+    "n_images": 8,
+    "full_hit": 1.0,
+    "crop_acc": 1.0,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 0.0,
+    "bg_anydet_orig": 0.0,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 0.0,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 0.8333333333333334
+   },
+   "median_area": 0.1693206787109375
+  },
+  "Planorbidae": {
+   "all": {
+    "n": 32,
+    "n_specimens": 4,
+    "n_images": 11,
+    "full_hit": 1.0,
+    "crop_acc": 1.0,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 0.46875,
+    "bg_anydet_orig": 0.46875,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 0.46875,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 0.9375
+   },
+   "small": {
+    "n": 30,
+    "n_specimens": 3,
+    "n_images": 9,
+    "full_hit": 1.0,
+    "crop_acc": 1.0,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 0.5,
+    "bg_anydet_orig": 0.5,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 0.5,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 1.0
+   },
+   "median_area": 0.2217767333984375
+  },
+  "Psychodidae": {
+   "all": {
+    "n": 21,
+    "n_specimens": 4,
+    "n_images": 21,
+    "full_hit": 1.0,
+    "crop_acc": 1.0,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 0.0,
+    "bg_anydet_orig": 0.0,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 0.0,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 0.0
+   },
+   "small": {
+    "n": 9,
+    "n_specimens": 2,
+    "n_images": 9,
+    "full_hit": 1.0,
+    "crop_acc": 1.0,
+    "crop_nodet": 0.0,
+    "bg_shortcut_orig": 0.0,
+    "bg_anydet_orig": 0.0,
+    "bg_shortcut_clean": 0.0,
+    "bg_anydet_clean": 0.0,
+    "bg_chance_orig": 0.0,
+    "bg_chance_clean": 0.0,
+    "crop_chance_uniform": 0.05263157894736842,
+    "crop_chance_majority": 1.0,
+    "frac_multi_instance": 0.0
+   },
+   "median_area": 0.5107470703125
+  }
+ },
+ "orig_hits_explained_by_other_gt": 72
+}

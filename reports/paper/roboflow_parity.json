@@ -1,0 +1,290 @@
+{
+  "summary": {
+    "checkpoint": "checkpoints/yolo26s_clean_best.pt",
+    "endpoint": "https://serverless.roboflow.com/pinv011159/yolo26s-clean",
+    "conf": 0.3,
+    "n_images": 31,
+    "same_n_detections": 31,
+    "same_top1_class": 30,
+    "n_with_detections": 30,
+    "max_abs_dconf": 0.003918290138244629,
+    "max_abs_dbox_px": 0.7471923828125
+  },
+  "per_image": [
+    {
+      "image": "2025_0519_102336_505_JPG.jpg",
+      "n_local": 1,
+      "n_remote": 1,
+      "cls_local": "Belostomatidae",
+      "cls_remote": "Belostomatidae",
+      "dconf": 0.003918290138244629,
+      "dbox_px": 0.297607421875
+    },
+    {
+      "image": "2025_0519_112819_873_JPG.jpg",
+      "n_local": 1,
+      "n_remote": 1,
+      "cls_local": "Belostomatidae",
+      "cls_remote": "Belostomatidae",
+      "dconf": 2.014636993408203e-05,
+      "dbox_px": 0.6593017578125
+    },
+    {
+      "image": "2025_0521_115828_431_JPG.jpg",
+      "n_local": 4,
+      "n_remote": 4,
+      "cls_local": "Planorbidae",
+      "cls_remote": "Planorbidae",
+      "dconf": 4.3272972106933594e-05,
+      "dbox_px": 0.563201904296875
+    },
+    {
+      "image": "2025_0526_122019_396_JPG.jpg",
+      "n_local": 1,
+      "n_remote": 1,
+      "cls_local": "Dytiscidae",
+      "cls_remote": "Dytiscidae",
+      "dconf": 4.458427429199219e-05,
+      "dbox_px": 0.69921875
+    },
+    {
+      "image": "2025_0526_130435_500_JPG.jpg",
+      "n_local": 2,
+      "n_remote": 2,
+      "cls_local": "Dytiscidae",
+      "cls_remote": "Dytiscidae",
+      "dconf": 1.1324882507324219e-05,
+      "dbox_px": 0.41851806640625
+    },
+    {
+      "image": "2025_0528_125543_323_JPG.jpg",
+      "n_local": 3,
+      "n_remote": 3,
+      "cls_local": "Chironomidae",
+      "cls_remote": "Chironomidae",
+      "dconf": 0.00027757883071899414,
+      "dbox_px": 0.595245361328125
+    },
+    {
+      "image": "2025_0529_112616_628_JPG.jpg",
+      "n_local": 1,
+      "n_remote": 1,
+      "cls_local": "Coenagrionidae",
+      "cls_remote": "Coenagrionidae",
+      "dconf": 5.620718002319336e-05,
+      "dbox_px": 0.185028076171875
+    },
+    {
+      "image": "2025_0529_115800_675_JPG.jpg",
+      "n_local": 1,
+      "n_remote": 1,
+      "cls_local": "Coenagrionidae",
+      "cls_remote": "Coenagrionidae",
+      "dconf": 5.9723854064941406e-05,
+      "dbox_px": 0.52593994140625
+    },
+    {
+      "image": "2025_0602_142706_185_JPG.jpg",
+      "n_local": 1,
+      "n_remote": 1,
+      "cls_local": "Physidae",
+      "cls_remote": "Physidae",
+      "dconf": 7.861852645874023e-05,
+      "dbox_px": 0.476531982421875
+    },
+    {
+      "image": "2025_0604_114214_609_JPG.jpg",
+      "n_local": 1,
+      "n_remote": 1,
+      "cls_local": "Noteridae",
+      "cls_remote": "Noteridae",
+      "dconf": 5.036592483520508e-05,
+      "dbox_px": 0.336669921875
+    },
+    {
+      "image": "2025_0604_140543_895_JPG.jpg",
+      "n_local": 4,
+      "n_remote": 4,
+      "cls_local": "Noteridae",
+      "cls_remote": "Noteridae",
+      "dconf": 0.00018864870071411133,
+      "dbox_px": 0.3773651123046875
+    },
+    {
+      "image": "2025_0605_104034_971_JPG.jpg",
+      "n_local": 1,
+      "n_remote": 1,
+      "cls_local": "Hirudinidae",
+      "cls_remote": "Hirudinidae",
+      "dconf": 0.00018483400344848633,
+      "dbox_px": 0.49188232421875
+    },
+    {
+      "image": "2025_0606_110403_676_JPG.jpg",
+      "n_local": 1,
+      "n_remote": 1,
+      "cls_local": "Libellulidae",
+      "cls_remote": "Libellulidae",
+      "dconf": 1.5437602996826172e-05,
+      "dbox_px": 0.7471923828125
+    },
+    {
+      "image": "2025_0606_113341_793_JPG.jpg",
+      "n_local": 1,
+      "n_remote": 1,
+      "cls_local": "Libellulidae",
+      "cls_remote": "Libellulidae",
+      "dconf": 0.00026237964630126953,
+      "dbox_px": 0.400634765625
+    },
+    {
+      "image": "2025_0609_112942_228_JPG.jpg",
+      "n_local": 1,
+      "n_remote": 1,
+      "cls_local": "Notonectidae",
+      "cls_remote": "Notonectidae",
+      "dconf": 4.3332576751708984e-05,
+      "dbox_px": 0.387451171875
+    },
+    {
+      "image": "2025_0611_115547_735_JPG.jpg",
+      "n_local": 2,
+      "n_remote": 2,
+      "cls_local": "Glossiphoniidae",
+      "cls_remote": "Glossiphoniidae",
+      "dconf": 7.62939453125e-06,
+      "dbox_px": 0.601470947265625
+    },
+    {
+      "image": "2025_0611_122645_851_JPG.jpg",
+      "n_local": 1,
+      "n_remote": 1,
+      "cls_local": "Glossiphoniidae",
+      "cls_remote": "Glossiphoniidae",
+      "dconf": 4.404783248901367e-05,
+      "dbox_px": 0.380462646484375
+    },
+    {
+      "image": "2025_0814_124609_135_JPG.jpg",
+      "n_local": 2,
+      "n_remote": 2,
+      "cls_local": "Hydrophilidae",
+      "cls_remote": "Hydrophilidae",
+      "dconf": 0.00014984607696533203,
+      "dbox_px": 0.55975341796875
+    },
+    {
+      "image": "2025_0827_144103_752_JPG.jpg",
+      "n_local": 1,
+      "n_remote": 1,
+      "cls_local": "Gerridae",
+      "cls_remote": "Gerridae",
+      "dconf": 2.3663043975830078e-05,
+      "dbox_px": 0.7303466796875
+    },
+    {
+      "image": "2025_0901_120251_179_JPG.jpg",
+      "n_local": 1,
+      "n_remote": 1,
+      "cls_local": "Gerridae",
+      "cls_remote": "Gerridae",
+      "dconf": 7.045269012451172e-05,
+      "dbox_px": 0.29052734375
+    },
+    {
+      "image": "2025_0909_124829_360_JPG.jpg",
+      "n_local": 1,
+      "n_remote": 1,
+      "cls_local": "Miridae",
+      "cls_remote": "Miridae",
+      "dconf": 5.221366882324219e-05,
+      "dbox_px": 0.127349853515625
+    },
+    {
+      "image": "2025_0909_135026_360_JPG.jpg",
+      "n_local": 0,
+      "n_remote": 0
+    },
+    {
+      "image": "2025_0916_112720_360_JPG.jpg",
+      "n_local": 1,
+      "n_remote": 1,
+      "cls_local": "Ancylidae",
+      "cls_remote": "Ancylidae",
+      "dconf": 0.00037598609924316406,
+      "dbox_px": 0.406982421875
+    },
+    {
+      "image": "2025_0916_113118_360_JPG.jpg",
+      "n_local": 1,
+      "n_remote": 1,
+      "cls_local": "Ancylidae",
+      "cls_remote": "Ancylidae",
+      "dconf": 9.757280349731445e-05,
+      "dbox_px": 0.3720703125
+    },
+    {
+      "image": "2025_0917_133323_360_JPG.jpg",
+      "n_local": 1,
+      "n_remote": 1,
+      "cls_local": "Psychodidae",
+      "cls_remote": "Psychodidae",
+      "dconf": 3.147125244140625e-05,
+      "dbox_px": 0.278045654296875
+    },
+    {
+      "image": "2025_0923_110806_360_JPG.jpg",
+      "n_local": 1,
+      "n_remote": 1,
+      "cls_local": "Ceratopogonidae",
+      "cls_remote": "Ceratopogonidae",
+      "dconf": 0.00010734796524047852,
+      "dbox_px": 0.34173583984375
+    },
+    {
+      "image": "2025_1020_113841_360_JPG.jpg",
+      "n_local": 1,
+      "n_remote": 1,
+      "cls_local": "Ceratopogonidae",
+      "cls_remote": "Ceratopogonidae",
+      "dconf": 2.473592758178711e-05,
+      "dbox_px": 0.208984375
+    },
+    {
+      "image": "2025_1020_114325_360_JPG.jpg",
+      "n_local": 1,
+      "n_remote": 1,
+      "cls_local": "Ceratopogonidae",
+      "cls_remote": "Ceratopogonidae",
+      "dconf": 6.115436553955078e-05,
+      "dbox_px": 0.258880615234375
+    },
+    {
+      "image": "2025_1103_110901_360_JPG.jpg",
+      "n_local": 1,
+      "n_remote": 1,
+      "cls_local": "Hyriidae",
+      "cls_remote": "Hyriidae",
+      "dconf": 0.00012040138244628906,
+      "dbox_px": 0.6070556640625
+    },
+    {
+      "image": "2025_1103_112757_360_JPG.jpg",
+      "n_local": 1,
+      "n_remote": 1,
+      "cls_local": "Hyriidae",
+      "cls_remote": "Hyriidae",
+      "dconf": 0.00013440847396850586,
+      "dbox_px": 0.5780029296875
+    },
+    {
+      "image": "2025_1120_114412_360_JPG.jpg",
+      "n_local": 1,
+      "n_remote": 1,
+      "cls_local": "Libellulidae",
+      "cls_remote": "Libellulidae",
+      "dconf": 0.0007622838020324707,
+      "dbox_px": 0.247650146484375
+    }
+  ]
+}
