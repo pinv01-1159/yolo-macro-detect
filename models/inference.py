@@ -27,6 +27,31 @@ from utils.validators import (
     validate_model_path,
 )
 
+# Margen gris alrededor de la imagen, el mismo que agrega val() de Ultralytics
+# (rect, pad=0.5 -> 640 px pasan a 672 px). Los organismos llenan el encuadre y
+# tocan el borde; sin este margen el mAP@0.5:0.95 en VALIDACION cae de 0.892 a
+# 0.813 en yolo26s (0.886 -> 0.865 en yolo12s; 0.867 -> 0.848 en yolo11s).
+# Elegido sobre validación, nunca sobre test.
+BORDER_PX = 16
+BORDER_VALUE = (114, 114, 114)  # relleno de letterbox de Ultralytics
+
+
+def pad_border(frame: np.ndarray) -> np.ndarray:
+    """Agrega el margen gris de BORDER_PX píxeles en los cuatro lados."""
+    return cv2.copyMakeBorder(frame, BORDER_PX, BORDER_PX, BORDER_PX, BORDER_PX,
+                              cv2.BORDER_CONSTANT, value=BORDER_VALUE)
+
+
+def unpad_detections(detections: sv.Detections, shape: tuple[int, ...]) -> sv.Detections:
+    """Lleva las cajas de la imagen con margen a coordenadas de la imagen original."""
+    if len(detections):
+        h, w = shape[:2]
+        xyxy = detections.xyxy - BORDER_PX
+        xyxy[:, [0, 2]] = xyxy[:, [0, 2]].clip(0, w)
+        xyxy[:, [1, 3]] = xyxy[:, [1, 3]].clip(0, h)
+        detections.xyxy = xyxy
+    return detections
+
 
 class YOLOInference:
     """
@@ -136,9 +161,10 @@ class YOLOInference:
             # from the signature alone. stream defaults to False here, which
             # always yields a list, so indexing is safe at runtime.
             results = self.model(
-                frame, imgsz=img_size, conf=conf_threshold, iou=iou_threshold, verbose=False
+                pad_border(frame), imgsz=img_size + 2 * BORDER_PX, conf=conf_threshold,
+                iou=iou_threshold, verbose=False,
             )[0]  # type: ignore[index]
-            detections = sv.Detections.from_ultralytics(results)
+            detections = unpad_detections(sv.Detections.from_ultralytics(results), frame.shape)
 
             result_data = self._process_detections(detections, results, frame)
 

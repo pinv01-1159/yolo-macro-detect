@@ -1,4 +1,9 @@
 """
+REEMPLAZADO (2026-11): usar tools/sweep_operating_point.py (barrido con la inferencia
+real, margen incluido, emparejamiento COCO) y tools/bootstrap_exact_ci.py (IC con la
+implementación exacta de Ultralytics). Este script empareja por IoU y no reproduce
+el mAP de Ultralytics; se conserva por trazabilidad de bootstrap_grouped.json.
+
 Cierra B6 (punto de operacion elegido en `valid`) y S1 (IC agrupados por
 especimen) para un checkpoint, sin reentrenar.
 

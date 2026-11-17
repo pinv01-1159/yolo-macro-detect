@@ -1,0 +1,144 @@
+{
+ "model": "checkpoints/yolo26s_clean_best.pt",
+ "split": "valid",
+ "n_images": 373,
+ "n_groups": 81,
+ "inference": {
+  "border_px": 16,
+  "nms_iou": 0.6,
+  "matching": "COCO, confianza descendente, IoU>=0.5"
+ },
+ "sweep": [
+  {
+   "tau": 0.05,
+   "precision": 0.9208,
+   "recall": 1.0,
+   "f1": 0.9588
+  },
+  {
+   "tau": 0.1,
+   "precision": 0.9545,
+   "recall": 0.9935,
+   "f1": 0.9737
+  },
+  {
+   "tau": 0.15,
+   "precision": 0.9625,
+   "recall": 0.9935,
+   "f1": 0.9778
+  },
+  {
+   "tau": 0.2,
+   "precision": 0.9767,
+   "recall": 0.9935,
+   "f1": 0.9851
+  },
+  {
+   "tau": 0.25,
+   "precision": 0.9828,
+   "recall": 0.9849,
+   "f1": 0.9839
+  },
+  {
+   "tau": 0.3,
+   "precision": 0.987,
+   "recall": 0.9806,
+   "f1": 0.9838
+  },
+  {
+   "tau": 0.35,
+   "precision": 0.9891,
+   "recall": 0.9785,
+   "f1": 0.9838
+  },
+  {
+   "tau": 0.4,
+   "precision": 0.9891,
+   "recall": 0.9742,
+   "f1": 0.9816
+  },
+  {
+   "tau": 0.45,
+   "precision": 0.9934,
+   "recall": 0.9677,
+   "f1": 0.9804
+  },
+  {
+   "tau": 0.5,
+   "precision": 0.9956,
+   "recall": 0.9656,
+   "f1": 0.9803
+  },
+  {
+   "tau": 0.55,
+   "precision": 0.9978,
+   "recall": 0.9613,
+   "f1": 0.9792
+  },
+  {
+   "tau": 0.6,
+   "precision": 0.9977,
+   "recall": 0.9527,
+   "f1": 0.9747
+  },
+  {
+   "tau": 0.65,
+   "precision": 1.0,
+   "recall": 0.9419,
+   "f1": 0.9701
+  },
+  {
+   "tau": 0.7,
+   "precision": 1.0,
+   "recall": 0.9247,
+   "f1": 0.9609
+  },
+  {
+   "tau": 0.75,
+   "precision": 1.0,
+   "recall": 0.8903,
+   "f1": 0.942
+  },
+  {
+   "tau": 0.8,
+   "precision": 1.0,
+   "recall": 0.8495,
+   "f1": 0.9186
+  },
+  {
+   "tau": 0.85,
+   "precision": 1.0,
+   "recall": 0.7828,
+   "f1": 0.8782
+  },
+  {
+   "tau": 0.9,
+   "precision": 1.0,
+   "recall": 0.6882,
+   "f1": 0.8153
+  },
+  {
+   "tau": 0.95,
+   "precision": 1.0,
+   "recall": 0.3527,
+   "f1": 0.5215
+  }
+ ],
+ "tau_star": 0.2,
+ "f1_tau_star": 0.9851,
+ "f1_baseline": 0.9838,
+ "paired_diff_ci95": [
+  -0.0066,
+  0.0105
+ ],
+ "argmax_frequency": {
+  "0.15": 0.002,
+  "0.2": 0.517,
+  "0.25": 0.117,
+  "0.3": 0.11,
+  "0.35": 0.129,
+  "0.45": 0.005,
+  "0.5": 0.085,
+  "0.55": 0.035
+ }
+}

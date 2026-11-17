@@ -1,0 +1,223 @@
+\documentclass[onecolumn]{article}
+\usepackage{informe-lsd}
+\usepackage{float}
+\usepackage{xurl}
+\usepackage{xcolor}
+
+% Marca visible para lo que todavía no tiene datos. Debe desaparecer antes de firmar:
+%   grep -n 'pendiente{' informe/main-informe-2.tex
+\newcommand{\pendiente}[1]{\colorbox{yellow!40}{\parbox{0.95\linewidth}{\small\textbf{PENDIENTE:} #1}}}
+
+\title{\vspace{-1.5cm}
+\begin{center}
+\LARGE
+\textbf{Informe Técnico N.º 2 - Asistente de Investigación\\
+PROYECTO PINV01-1159} \\
+\Large Diciembre 2026
+\vspace{0.5cm}
+\end{center}
+}
+
+\author[1]{Kevin Galeano, Univ.\orcidlink{0009-0002-5536-8315}}
+\affil[1]{
+\small
+gsmkev@gmail.com ArtICS Lab S.R.L. San Lorenzo, Paraguay.
+}
+
+\date{}
+
+\begin{document}
+\thispagestyle{firstpagestyle}
+\maketitle
+
+\vspace{-0.5cm}
+\begin{abstract}
+Este informe cierra el período final del contrato (octubre--diciembre de 2026). El sistema de identificación automática de macroinvertebrados acuáticos quedó \textbf{desplegado y operativo} como servicio de inferencia accesible por API, con el modelo de referencia del informe anterior (YOLO26s, mAP@0.5:0.95 de 0.881 sobre 87 ejemplares independientes). Se verificó que el modelo publicado produce \textbf{las mismas identificaciones} que el modelo original: en una muestra fija del conjunto de prueba, coincidieron la familia y el número de detecciones en todas las imágenes, con diferencias de confianza menores a 0.004 y de posición menores a un píxel.
+
+El umbral de operación quedó fijado en 0.30 tras un barrido sobre el conjunto de validación, y se documentó el flujo completo del sistema ---fotografía, detección, familia, índice biótico BMWP--- junto con su manual de uso, en un repositorio que contiene el código, los pesos, la configuración y la procedencia de cada cifra.
+
+\pendiente{Resumen de la validación con datos independientes (tercera campaña) y de la comparación contra la identificación experta: tamaño de la muestra, acuerdo por familia y por muestra, y conclusión.}
+\vspace{0.5cm}
+\keywords{Detección de Objetos; YOLO; Macroinvertebrados; Bioindicadores; BMWP; Despliegue; Validación}
+\end{abstract}
+
+\section{Introducción}
+
+El Proyecto PINV01-1159 desarrolla un sistema de monitoreo de calidad de agua superficial basado en la identificación automática de macroinvertebrados acuáticos. El sistema recibe fotografías de ejemplares, identifica su familia taxonómica y, a partir de las familias presentes en un sitio de muestreo, calcula el índice biótico BMWP.
+
+El primer informe estableció la línea base auditable del proyecto: una partición del conjunto agrupada por ejemplar, tres arquitecturas evaluadas bajo idéntico protocolo y una caracterización de los límites de validez del sistema. Este segundo informe responde a las actividades comprometidas para el período final: \textbf{validación} con datos independientes y frente a la identificación experta, \textbf{optimización y despliegue} del sistema, y \textbf{documentación y cierre}.
+
+\section{Optimización y Despliegue}
+
+\subsection{Ajuste final de los parámetros de inferencia}
+
+El sistema opera con cuatro parámetros de inferencia: el umbral de confianza ($\tau$), el umbral de solapamiento para suprimir detecciones duplicadas, la resolución de entrada (640~px, la misma del entrenamiento) y un \textbf{margen de 16~px} en gris neutro alrededor de cada fotografía.
+
+\paragraph{El margen de inferencia, un ajuste nuevo de este período.} Los organismos ocupan la mayor parte del encuadre y con frecuencia tocan sus bordes. El procedimiento estándar de evaluación de la biblioteca agrega un borde gris de 16~px a cada imagen, y se comprobó que ese borde permite al detector delimitar mejor los ejemplares que alcanzan el límite de la fotografía. Medido sobre el conjunto de validación, el margen eleva el mAP@0.5:0.95 en las tres arquitecturas: de 0.848 a 0.867 en YOLO11s, de 0.865 a 0.886 en YOLO12s y de 0.813 a 0.892 en el modelo de referencia. Se incorporó a la inferencia del sistema (\path{models/inference.py}), de modo que las métricas reportadas corresponden exactamente a las condiciones de operación; con el margen, la inferencia del sistema reproduce la exhaustividad de la evaluación (99.3\,\% frente a 99.4\,\%).
+
+El umbral de confianza se eligió con un barrido de $\tau$ entre 0.05 y 0.95 sobre el \textbf{conjunto de validación}, nunca sobre el de prueba, para no contaminar la evaluación final. El barrido usa la misma inferencia del sistema, con el margen incluido. El F1 máximo se alcanza en $\tau=0.20$ (0.985), pero la diferencia con $\tau=0.30$ (0.984) es de una milésima, y su intervalo de confianza pareado, remuestreando ejemplares, contiene el cero ($[-0.007;\ 0.011]$). Se mantuvo $\tau=0.30$ porque comete menos falsos positivos (precisión 98.7\,\% frente a 97.7\,\%), y en bioindicación un falso positivo introduce una familia inexistente en el índice, mientras que un falso negativo sólo lo empobrece.
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.15}
+\caption{Barrido del umbral de confianza sobre validación (modelo de referencia, extracto)}
+\label{tab:barrido}
+\begin{tabular}{cccc}
+\hline
+$\tau$ & \textbf{Precisión} & \textbf{Exhaustividad} & \textbf{F1} \\
+\hline
+0.20 & 97.7\% & 99.4\% & 0.985 \\
+0.25 & 98.3\% & 98.5\% & 0.984 \\
+\textbf{0.30} & \textbf{98.7\%} & \textbf{98.1\%} & \textbf{0.984} \\
+0.40 & 98.9\% & 97.4\% & 0.982 \\
+0.50 & 99.6\% & 96.6\% & 0.980 \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Puesta en marcha operativa}
+
+El modelo de referencia (YOLO26s) se publicó en la plataforma Roboflow, asociado al proyecto del conjunto con la partición corregida. Queda accesible como \textbf{servicio de inferencia por API}: cualquier aplicación puede enviar una fotografía y recibir las detecciones con familia, confianza y posición, sin instalar el entorno de entrenamiento ni disponer de GPU.
+
+El servicio recibe la fotografía tal como se envía: para reproducir las condiciones de operación, la aplicación cliente agrega el margen de 16~px antes de enviarla y resta 16~px a las coordenadas devueltas, con las funciones \texttt{pad\_border} y \texttt{unpad\_detections} del repositorio.
+
+Se publicó únicamente el modelo de referencia declarado en el informe anterior. Las otras dos arquitecturas siguen disponibles en el repositorio para reproducir la comparación, pero no forman parte del sistema operativo.
+
+\paragraph{Verificación del despliegue.} Publicar un modelo implica convertirlo a otro formato de ejecución (ONNX), y esa conversión puede alterar sus salidas. Se verificó que no fuera así: el mismo conjunto de imágenes se procesó con el modelo original y con el servicio publicado, y se compararon las salidas imagen por imagen.
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.15}
+\caption{Paridad entre el modelo original y el servicio publicado (31 imágenes de prueba, $\tau=0.30$)}
+\label{tab:paridad}
+\begin{tabular}{lc}
+\hline
+\textbf{Indicador} & \textbf{Resultado} \\
+\hline
+Imágenes con el mismo número de detecciones & 31 / 31 \\
+Imágenes con la misma familia identificada & 30 / 30$^{*}$ \\
+Máxima diferencia de confianza & 0.004 \\
+Máxima diferencia de posición de la caja & 0.7 px \\
+\hline
+\multicolumn{2}{l}{\footnotesize $^{*}$ En la imagen restante ninguno de los dos detecta organismos.}
+\end{tabular}
+\end{table}
+
+Las diferencias son del orden del redondeo numérico entre formatos: el servicio publicado es, a efectos prácticos, el mismo modelo que se evaluó. La prueba es reproducible con \path{tools/check_roboflow_parity.py} y su resultado está en \path{reports/paper/roboflow_parity.json}.
+
+El sistema también puede ejecutarse localmente desde la línea de comandos, tanto sobre una imagen como sobre la carpeta completa de un sitio de muestreo, que es el modo que produce el índice biótico.
+
+\pendiente{Si corresponde, evidencia de uso en el entorno operativo de destino (servidor del laboratorio, aplicación cliente): capturas, registros de solicitudes y tiempos de respuesta medidos con calentamiento previo.}
+
+\section{Validación}
+
+\subsection{Diseño}
+
+El informe anterior identificó el principal riesgo de validez del sistema: doce de las diecinueve familias provenían de una sola jornada fotográfica, y el contexto de esa jornada (fondo, bandeja, iluminación) era parcialmente predictivo de la familia. Ninguna técnica aplicada sobre el entrenamiento lo corrigió. Por eso la validación de este período se diseñó sobre \textbf{datos de una campaña independiente}, no vistos por el sistema en ninguna etapa, y comparando la salida del sistema contra la identificación de un especialista.
+
+\pendiente{Describir la campaña: fechas, sitios, número de muestras y de ejemplares por familia, condiciones de captura (fondo, bandeja, iluminación) y quién realizó la identificación experta. Registrar los datos de entrada (inventario de imágenes con su huella SHA-256).}
+
+\subsection{Resultados frente a la identificación experta}
+
+\pendiente{Tabla de acuerdo por familia (aciertos, confusiones, omisiones, detecciones espurias), matriz de confusión sobre la campaña independiente, y métricas con intervalos remuestreando ejemplares. Comparar con las cifras del informe 1 (mAP@0.5:0.95 = 0.881): la caída entre ambas mide el efecto del contexto fotográfico.}
+
+\pendiente{Comparación por muestra: BMWP y ASPT calculados por el sistema frente a los calculados con la identificación experta, sitio por sitio, y clase de calidad resultante en ambos casos.}
+
+\pendiente{Si la campaña incluye fotografías de bandeja sin organismo: tasa de detecciones espurias por imagen.}
+
+\subsection{Dependencia del contexto fotográfico: análisis refinado}
+
+En este período se refinó el análisis de cuánto se apoya el sistema en el contexto fotográfico en lugar del organismo. La prueba consiste en presentar a cada modelo dos versiones de cada uno de los 458 organismos del conjunto de prueba: un recorte ajustado al organismo, con poco contexto, y la fotografía completa con el organismo cubierto por un relleno gris, que deja sólo el contexto.
+
+El refinamiento consistió en aislar exactamente la zona cubierta. En 51 fotografías del conjunto de prueba hay varios ejemplares de la misma familia; al cubrir uno, los demás siguen visibles, y una detección sobre ellos no indica que el sistema esté usando el fondo. Con ese control, los resultados por arquitectura son los de la Tabla~\ref{tab:ablacion}.
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.15}
+\caption{Ablación de contexto sobre el conjunto de prueba (458 organismos, 87 ejemplares). Intervalos de confianza del 95\,\% por remuestreo de ejemplares.}
+\label{tab:ablacion}
+\begin{tabular}{lccc}
+\hline
+\textbf{Modelo} & \textbf{Fotografía completa} & \textbf{Sólo organismo} & \textbf{Detección sobre la zona cubierta} \\
+\hline
+YOLO11s & 96.5\% & 99.1\% [98.1--100] & 0.2\% (1/458) \\
+YOLO12s & 99.8\% & 100\% & 0\% (0/458) \\
+\textbf{YOLO26s} & 98.0\% & 98.5\% [95.7--100] & 0\% (0/458) \\
+\hline
+\end{tabular}
+\end{table}
+
+El resultado es favorable al sistema: \textbf{la identificación se sostiene sobre la región del organismo} ---el recorte rinde igual o mejor que la fotografía completa--- y \textbf{ningún modelo genera detecciones a partir del contexto} cuando el organismo no está. Con el criterio inicial, que no distinguía los otros ejemplares visibles, la misma prueba arrojaba alrededor de un 16\,\%; el refinamiento muestra que esas detecciones correspondían a organismos reales.
+
+El análisis tiene un alcance preciso. No descarta que el contexto de la sesión contribuya a la decisión cuando el organismo está presente, que es lo que indica el clasificador sobre miniaturas del informe anterior (39.5\,\% de acierto sin ver los caracteres del organismo). Distinguir ambos efectos requiere evaluar el sistema sobre sesiones fotográficas no vistas, que es el objetivo de la validación independiente. Los guiones y resultados están en \path{tools/ablation_raw.py}, \path{tools/ablation_analyze.py} y \path{reports/paper/ablation/}.
+
+\subsection{Alcance}
+
+Los resultados del informe anterior siguen siendo válidos para su régimen: macrofotografía de ejemplar aislado, en las condiciones de captura del laboratorio. El índice BMWP cubre las diecinueve familias; \emph{Hyriidae} y \emph{Miridae} no figuran en las tablas de referencia y su puntaje se declara provisional en cada resultado.
+
+\pendiente{Confirmación del especialista sobre los puntajes de \emph{Hyriidae} y \emph{Miridae}, o su mantenimiento como provisionales.}
+
+\section{Documentación Técnica del Sistema}
+
+\subsection{Flujo imagen $\rightarrow$ clase $\rightarrow$ familia $\rightarrow$ índice biológico}
+
+\begin{enumerate}
+  \item \textbf{Imagen.} Macrofotografía de un ejemplar aislado sobre bandeja, redimensionada a $640\times640$ px.
+  \item \textbf{Clase.} El detector (YOLO26s, 9.5 millones de parámetros, sin supresión de no-máximos), sobre la fotografía con un margen de 16~px, devuelve para cada organismo una caja, un índice de clase y una confianza. Se descartan las detecciones con confianza menor a 0.30.
+  \item \textbf{Familia.} Cada índice de clase corresponde a una de las 19 familias del conjunto. Las detecciones de todas las fotografías de un sitio se agregan en una lista de familias presentes, con su abundancia y confianza promedio.
+  \item \textbf{Índice biológico.} Cada familia presente aporta su puntaje BMWP/Col una sola vez (presencia/ausencia). La suma es el BMWP del sitio, que se traduce a una de cinco clases de calidad; se reporta además el ASPT (puntaje promedio por taxón), menos sensible al esfuerzo de muestreo. Si una familia no tiene puntaje, se excluye del índice y se informa explícitamente.
+\end{enumerate}
+
+\subsection{Componentes y documentación entregada}
+
+\begin{table}[H]
+\centering
+\renewcommand{\arraystretch}{1.15}
+\small
+\caption{Componentes del sistema}
+\label{tab:componentes}
+\begin{tabular}{p{4.6cm}p{9.4cm}}
+\hline
+\textbf{Componente} & \textbf{Contenido} \\
+\hline
+\path{README.md} & Manual de instalación y uso, resultados, limitaciones \\
+\path{main.py} & Interfaz de línea de comandos: entrenamiento, predicción por imagen y por sitio \\
+\path{models/} & Entrenamiento e inferencia \\
+\path{utils/bmwp_calculator.py} & Índice BMWP/ASPT por sitio, con trazabilidad de puntajes provisionales \\
+\path{checkpoints/} & Pesos de las tres arquitecturas, configuración efectiva y curvas de entrenamiento \\
+\path{tools/} & Auditoría, reconstrucción de la partición, verificación del despliegue \\
+\path{reports/paper/} & Artefactos de evaluación y procedencia (huella SHA-256 y comando de cada cifra) \\
+\hline
+\end{tabular}
+\end{table}
+
+\subsection{Material de difusión}
+
+Se redactó una sección de divulgación técnica sobre el componente tecnológico y de visión por computadora del proyecto, destinada a una revista (\path{docs/revista_seccion_tecnologica.md}).
+
+\pendiente{Constancias de difusión: presentaciones, envíos a revista o congreso, con fecha y destino.}
+
+\section{Conclusiones}
+
+El sistema queda entregado como un servicio de inferencia operativo cuya salida se verificó idéntica, a efectos prácticos, a la del modelo evaluado; con el umbral de operación justificado sobre datos que no intervienen en la evaluación; y con la documentación necesaria para que un tercero lo instale, lo use y reproduzca cada cifra reportada.
+
+\pendiente{Conclusión de la validación independiente: en qué condiciones el sistema alcanza el desempeño necesario para el uso operativo, y qué queda fuera de ese alcance.}
+
+\section{Medios de Verificación}
+
+\begin{itemize}
+    \item \textbf{Repositorio con código fuente, pesos, configuración y manual}: \url{https://github.com/pinv01-1159/yolo-macro-detect}
+    \item \textbf{Modelo desplegado (API)}: \url{https://app.roboflow.com/pinv011159/macroinvertebrados-split-limpio-kuhq3/models}
+    \item \textbf{Verificación del despliegue}: \path{tools/check_roboflow_parity.py} y \path{reports/paper/roboflow_parity.json}.
+    \item \textbf{Ajuste del umbral de operación}: \path{tools/sweep_operating_point.py} y \path{reports/paper/operating_point_sweep.json}.
+    \item \textbf{Intervalos de confianza y comparación entre arquitecturas}: \path{tools/bootstrap_exact_ci.py} y \path{reports/paper/bootstrap_ultralytics_exact.json}.
+    \item \textbf{Evaluación de referencia} (métricas, matrices de confusión, desempeño por familia): carpeta \texttt{reports/paper}.
+    \item \textbf{Material de difusión}: \path{docs/revista_seccion_tecnologica.md}.
+    \item \pendiente{Reporte de validación independiente: métricas, matrices, gráficos, salidas de inferencia y ejemplos de detección sobre la campaña nueva.}
+\end{itemize}
+
+\section*{Agradecimientos}
+
+El autor desea agradecer al Consejo Nacional de Ciencia y Tecnología (CONACYT) y al programa PROCIENCIA por el apoyo financiero brindado al Proyecto PINV01-1159, a los especialistas en taxonomía de macroinvertebrados por la validación del sistema, y a la comunidad de desarrolladores de código abierto cuyas herramientas hicieron posible su implementación.
+
+\end{document}
